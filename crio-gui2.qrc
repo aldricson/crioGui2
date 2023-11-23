@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/cacher.png</file>
+        <file>images/oeil.png</file>
+    </qresource>
+</RCC>
