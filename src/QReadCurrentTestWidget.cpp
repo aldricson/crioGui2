@@ -1,65 +1,75 @@
 #include "QReadCurrentTestWidget.h"
 
-QReadCurrentTestWidget::QReadCurrentTestWidget(QWidget *parent) : QWidget(parent) {
+QReadCurrentTestWidget::QReadCurrentTestWidget(QtTcpClient *tcpClient, QWidget *parent) : QWidget(parent)
+{
+    m_tcpClient = tcpClient;
+    connect(m_tcpClient,&QtTcpClient::currentReadedSignal,this,&QReadCurrentTestWidget::onReadCurrentDone,Qt::QueuedConnection);
     setupUi();
 }
 
 void QReadCurrentTestWidget::setupUi() {
-    groupBox = new QGroupBox("Read Current Test", this);
-    moduleLabel = new QLabel("Choose module", groupBox);
-    channelLabel = new QLabel("Choose channel", groupBox);
-    modulesComboBox = new QComboBox(groupBox);
-    channelComboBox = new QComboBox(groupBox);
-    readOneShotButton = new QPushButton("Read One Shot", groupBox);
-    pollButton = new QPushButton("Poll", groupBox);
-    resultLabel = new QLabel(groupBox);
-    resultLabel->setText("Nan");
+    m_groupBox = new QGroupBox("Read Current Test", this);
+    m_moduleLabel = new QLabel("Choose module", m_groupBox);
+    m_channelLabel = new QLabel("Choose channel", m_groupBox);
+    m_modulesComboBox = new QComboBox(m_groupBox);
+    m_channelComboBox = new QComboBox(m_groupBox);
+    m_readOneShotButton = new QPushButton("Read One Shot", m_groupBox);
+    m_pollButton = new QPushButton("Poll", m_groupBox);
+    m_resultLabel = new QLabel(m_groupBox);
+    m_resultLabel->setText("Nan");
 
-    QGridLayout *layout = new QGridLayout(groupBox);
-    layout->addWidget(moduleLabel       , 0, 0, 1, 1,Qt::AlignCenter); layout->addWidget(channelLabel    , 0, 1, 1, 1,Qt::AlignCenter);
-    layout->addWidget(modulesComboBox   , 1, 0, 1, 1,Qt::AlignCenter); layout->addWidget(channelComboBox , 1, 1, 1, 1,Qt::AlignCenter);
-    layout->addWidget(resultLabel       , 2, 0, 1, 2,Qt::AlignCenter);
-    layout->addWidget(readOneShotButton , 3, 0, 1, 1,Qt::AlignCenter); layout->addWidget(pollButton      , 3, 1, 1, 1,Qt::AlignCenter);
+    QGridLayout *layout = new QGridLayout(m_groupBox);
+    layout->addWidget(m_moduleLabel       , 0, 0, 1, 1,Qt::AlignCenter); layout->addWidget(m_channelLabel    , 0, 1, 1, 1,Qt::AlignCenter);
+    layout->addWidget(m_modulesComboBox   , 1, 0, 1, 1,Qt::AlignCenter); layout->addWidget(m_channelComboBox , 1, 1, 1, 1,Qt::AlignCenter);
+    layout->addWidget(m_resultLabel       , 2, 0, 1, 2,Qt::AlignCenter);
+    layout->addWidget(m_readOneShotButton , 3, 0, 1, 1,Qt::AlignCenter); layout->addWidget(m_pollButton      , 3, 1, 1, 1,Qt::AlignCenter);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(groupBox);
+    mainLayout->addWidget(m_groupBox);
 
-    connect(readOneShotButton, &QPushButton::clicked, this, &QReadCurrentTestWidget::onReadOneShotClicked);
-    connect(pollButton,        &QPushButton::clicked, this, &QReadCurrentTestWidget::onPollClicked);
+    connect(m_readOneShotButton, &QPushButton::clicked, this, &QReadCurrentTestWidget::onReadOneShotClicked);
+    connect(m_pollButton,        &QPushButton::clicked, this, &QReadCurrentTestWidget::onPollClicked);
 }
 
-void QReadCurrentTestWidget::onReadOneShotClicked() {
-    // Implement the logic for reading one shot
-    resultLabel->setText("One shot read result here");
+void QReadCurrentTestWidget::onReadOneShotClicked()
+{
+    emit logLastRequest("readCurrent on "+m_modulesComboBox->currentText()+m_channelComboBox->currentText());
+    m_tcpClient->sendReadCurrentRequest(m_modulesComboBox->currentText(),m_channelComboBox->currentIndex());
 }
 
 void QReadCurrentTestWidget::onPollClicked() {
     // Implement the logic for polling
-    resultLabel->setText("Polling result here");
+    m_resultLabel->setText("Polling result here");
+}
+
+void QReadCurrentTestWidget::onReadCurrentDone(const QString &result)
+{
+    m_resultLabel->setText(result);
+    emit logLastResponse(result);
 }
 
 QComboBox *QReadCurrentTestWidget::getChannelComboBox() const
 {
-    return channelComboBox;
+    return m_channelComboBox;
 }
 
 void QReadCurrentTestWidget::setChannelComboBox(QComboBox *newChannelComboBox)
 {
-    if (channelComboBox == newChannelComboBox)
+    if (m_channelComboBox == newChannelComboBox)
         return;
-    channelComboBox = newChannelComboBox;
+    m_channelComboBox = newChannelComboBox;
     emit channelComboBoxChanged();
 }
 
 QComboBox *QReadCurrentTestWidget::getModulesComboBox() const
 {
-    return modulesComboBox;
+    return m_modulesComboBox;
 }
 
 void QReadCurrentTestWidget::setModulesComboBox(QComboBox *newModulesComboBox)
 {
-    if (modulesComboBox == newModulesComboBox)
+    if (m_modulesComboBox == newModulesComboBox)
         return;
-    modulesComboBox = newModulesComboBox;
+    m_modulesComboBox = newModulesComboBox;
     emit modulesComboBoxChanged();
 }

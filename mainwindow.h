@@ -62,13 +62,14 @@ private:
     QString     lastSshCommand      = "";
     bool        fromStartServer     = false;
     bool        fromStopServer      = false;
+    void        setupSSHModule();
 
-    QStringList      moduleList;
-    QStringList      currentModulesPathList;
-    QStringListModel *moduleListModel;
-    QLabel           *moduleListLabel;
-    QListView        *modulesListView;
-    QProgressBar     *modulesLoadingProgressBar;
+    QStringList      moduleList             ;
+    QStringList      currentModulesPathList ;
+    QStringListModel *moduleListModel           = nullptr;
+    QLabel           *moduleListLabel           = nullptr;
+    QListView        *modulesListView           = nullptr;
+    QProgressBar     *modulesLoadingProgressBar = nullptr;
     int              currentModuleIndex;
 
     QReadCurrentTestWidget *currentTestWidget;
@@ -81,33 +82,40 @@ private:
 
     QIniTreeWidget  *iniTreeWidget;
     QtTcpClient     *tcpClient;
+    void            setupTCPClient    ();
+    void            setupCurrentReader();
 
 
-    QWidget *createCrioViewTab();
-    QWidget *createModbusViewTab();
-    QWidget *createGlobalParametersTab();
-    QWidget *createDeviceParametersTab();
-    QWidget *createMappingTableTab();
-    void    createModuleList();
+    QWidget *createCrioViewTab         ();
+    QWidget *createModbusViewTab       ();
+    QWidget *createGlobalParametersTab ();
+    QWidget *createDeviceParametersTab ();
+    QWidget *createMappingTableTab     ();
+    void    createModuleList           ();
 
 
 
-    const int sshPort = 22;
-    QString   iniModulesLocalPath;
-    void      handleConnection();
-    void      downloadModulesDefinitions(int index);
-    QString   retriveStringFromListViewIndex(int rowIndex);
+    const int     sshPort     = 22  ;
+    const quint16 commandPort = 8222;
+
+    QString   iniModulesLocalPath                          ;
+    void      handleConnection               ()            ;
+    void      downloadModulesDefinitions     (int index)   ;
+    QString   retriveStringFromListViewIndex (int rowIndex);
 
 private slots:
     //ssh commands signal
-    void  onSSHError               (const QString &errorString,const QString &lastCommand);
-    void  onLsCommandExecuted      (const QString &output,const QString &lastCommand);
-    void  onModuleListRetrived     (const QString &output,const QString &lastCommand);
-    void  onModuleIniFileDownloaded(const QString &output,const QString &lastCommand);
-    void  onServerGetState         (const bool &isRunning,const QString &lastCommand);
+    void  onSSHError               (const QString &errorString , const QString &lastCommand);
+    void  onLsCommandExecuted      (const QString &output      , const QString &lastCommand);
+    void  onModuleListRetrived     (const QString &output      , const QString &lastCommand);
+    void  onModuleIniFileDownloaded(const QString &output      , const QString &lastCommand);
+    void  onServerGetState         (const bool    &isRunning   , const QString &lastCommand);
     void  onServerStarted          (const QString &lastCommand);
     void  onServerStoped           (const QString &lastCommand);
-    void  onServerStartSuccesfull  (const int &screenSession  , const QString &lastCommand);
+    void  onServerStartSuccesfull  (const int     &screenSession , const QString &lastCommand);
+
+    void onCommandServerLogRequest  (const QString &request);
+    void onCommandServerLogResponse (const QString &response);
 
 
 

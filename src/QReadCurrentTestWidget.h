@@ -7,43 +7,47 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QGridLayout>
+#include "QtTcpClient.h"
 
 class QReadCurrentTestWidget : public QWidget {
     Q_OBJECT
+    Q_PROPERTY(QComboBox *modulesComboBox READ getModulesComboBox WRITE setModulesComboBox NOTIFY modulesComboBoxChanged)
+    Q_PROPERTY(QComboBox *channelComboBox READ getChannelComboBox WRITE setChannelComboBox NOTIFY channelComboBoxChanged)
 
 public:
-    QReadCurrentTestWidget(QWidget *parent = nullptr);
+    QReadCurrentTestWidget(QtTcpClient* tcpClient,QWidget *parent = nullptr);
 
 
     QComboBox *getModulesComboBox() const;
-    void setModulesComboBox(QComboBox *newModulesComboBox);
+    void       setModulesComboBox(QComboBox *newModulesComboBox);
 
     QComboBox *getChannelComboBox() const;
-    void setChannelComboBox(QComboBox *newChannelComboBox);
+    void       setChannelComboBox(QComboBox *newChannelComboBox);
 
 signals:
     void modulesComboBoxChanged();
-
     void channelComboBoxChanged();
+    void logLastRequest   (const QString &lastRequest);
+    void logLastResponse  (const QString &lastResponse);
 
 private slots:
     void onReadOneShotClicked();
-    void onPollClicked();
+    void onPollClicked       ();
+    void onReadCurrentDone   (const QString &result);
 
 private:
-    QGroupBox    *groupBox;
-    QLabel       *moduleLabel;
-    QLabel       *channelLabel;
-    QComboBox    *modulesComboBox;
-    QComboBox    *channelComboBox;
-    QPushButton  *readOneShotButton;
-    QPushButton  *pollButton;
-    QLabel       *resultLabel;
-
+    QGroupBox    *m_groupBox          = nullptr;
+    QLabel       *m_moduleLabel       = nullptr;
+    QLabel       *m_channelLabel      = nullptr;
+    QComboBox    *m_modulesComboBox   = nullptr;
+    QComboBox    *m_channelComboBox   = nullptr;
+    QPushButton  *m_readOneShotButton = nullptr;
+    QPushButton  *m_pollButton        = nullptr;
+    QLabel       *m_resultLabel       = nullptr;
+    QtTcpClient  *m_tcpClient         = nullptr;
 
     void setupUi();
-    Q_PROPERTY(QComboBox *modulesComboBox READ getModulesComboBox WRITE setModulesComboBox NOTIFY modulesComboBoxChanged)
-    Q_PROPERTY(QComboBox *channelComboBox READ getChannelComboBox WRITE setChannelComboBox NOTIFY channelComboBoxChanged)
+
 };
 
 #endif // QReadCurrentTestWidget_H

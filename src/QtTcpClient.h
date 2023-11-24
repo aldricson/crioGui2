@@ -14,11 +14,15 @@ public:
 
 private:
     QTcpSocket *socket;
+    QString m_lastRequest = "";
 
 private slots:
     void onConnected();
     void onDataReceived();
     void displayError(QAbstractSocket::SocketError socketError);
+
+signals:
+    void currentReadedSignal(const QString &response);
 };
 
 #endif // QTTCPCLIENT_H

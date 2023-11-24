@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
-    moduleExtractor = new QCrioModulesDataExtractor(this);
+    moduleExtractor     = new QCrioModulesDataExtractor(this);
+    setupTCPClient();
     ui->setupUi(this);
     tabWidget = new QTabWidget(this);
 
@@ -26,13 +27,12 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+
 QWidget *MainWindow::createCrioViewTab()
 {
     QWidget *tab = new QWidget();
     createModuleList();
-    currentTestWidget = new QReadCurrentTestWidget(this);
-    currentTestWidget->setEnabled(false);
-
+    setupCurrentReader();
     QGridLayout *layout = new QGridLayout(tab);
 
     ipLabel = new QLabel(this);
@@ -155,9 +155,14 @@ void MainWindow::handleConnection()
         delete(sshCommand);
         sshCommand = nullptr;
     }
+    setupSSHModule();
+    connectButton->setEnabled(false);
+    sshCommand->isServerRunning();
+}
 
+void MainWindow::setupSSHModule()
+{
     sshCommand = new QSSHCommand(this);
-
     // Set the SSH connection details
     sshCommand->setHostName(ipEdit->ipAddress());
     sshCommand->setUserName(loginEdit->text());
@@ -171,8 +176,19 @@ void MainWindow::handleConnection()
     connect(sshCommand, &QSSHCommand::serverStartedSignal          , this , &MainWindow::onServerStarted           ,Qt::QueuedConnection);
     connect(sshCommand, &QSSHCommand::serverStartSuccesfullSignal  , this , &MainWindow::onServerStartSuccesfull   ,Qt::QueuedConnection);
     connect(sshCommand, &QSSHCommand::serverStopedSignal           , this , &MainWindow::onServerStoped            ,Qt::QueuedConnection);
+}
 
-    sshCommand->isServerRunning();
+void MainWindow::setupTCPClient()
+{
+    tcpClient  = new QtTcpClient(this);
+}
+
+void MainWindow::setupCurrentReader()
+{
+    currentTestWidget = new QReadCurrentTestWidget(tcpClient,this);
+    currentTestWidget->setEnabled(false);
+    connect (currentTestWidget, &QReadCurrentTestWidget::logLastRequest,this,&MainWindow::onCommandServerLogRequest,Qt::QueuedConnection);
+    connect (currentTestWidget, &QReadCurrentTestWidget::logLastResponse,this,&MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
 }
 
 
@@ -293,7 +309,10 @@ void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString 
                 moduleExtractor->extractCurrentModules(currentModulesPathList,
                                                        currentTestWidget->getModulesComboBox(),
                                                        currentTestWidget->getChannelComboBox());
+                tcpClient->connectToServer(ipEdit->ipAddress(),commandPort);
             }
+
+
         }
     }
 }
@@ -387,6 +406,16 @@ void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString
     fromStopServer  = false;
     currentTestWidget->setEnabled(true);
     serverStateLabel->setText("server status:\n running on\nsession"+QString::number(screenSession));
+}
+
+void MainWindow::onCommandServerLogRequest(const QString &request)
+{
+    terminalOutput->addLastCommand(request);
+}
+
+void MainWindow::onCommandServerLogResponse(const QString &response)
+{
+    terminalOutput->addLastOutput(response);
 }
 
 void MainWindow::onServerChangeState()

@@ -12,8 +12,10 @@ void QtTcpClient::connectToServer(const QString &host, quint16 port) {
 }
 
 void QtTcpClient::sendReadCurrentRequest(const QString &moduleAlias, unsigned int channelIndex) {
-    if (socket->state() == QAbstractSocket::ConnectedState) {
+    if (socket->state() == QAbstractSocket::ConnectedState)
+    {
         QString request = QString("readCurrent;%1;%2;").arg(moduleAlias).arg(channelIndex);
+        m_lastRequest = "readCurrent";
         socket->write(request.toUtf8());
     }
 }
@@ -24,6 +26,10 @@ void QtTcpClient::onConnected() {
 
 void QtTcpClient::onDataReceived() {
     QString response = QString::fromUtf8(socket->readAll());
+    if (m_lastRequest == "readCurrent")
+    {
+        emit currentReadedSignal(response);
+    }
     qDebug() << "Response from server:" << response;
 }
 
