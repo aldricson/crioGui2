@@ -25,7 +25,7 @@ set(PROJECT_MAIN_SOURCES
 #Program sources directory
 set (SOURCES_DIRECTORY ./src)
 set (QXLSX_HEADERS_DIRECTORY ../QXlsx/QXlsx/header)
-set (LIBSSH_DIRECTORY        ../libssh/header)
+
 
 #recursively fill a list of all current project headers
 message (STATUS "")
@@ -62,16 +62,6 @@ foreach(header IN LISTS QXLSX_HEADERS)
     message ("found: ${header}")
 endforeach(header ${QXLSX_HEADERS_DIRECTORY})
 
-#recursively fill a list of all libssh headers
-message (STATUS "")
-message (STATUS "********************************************")
-message (STATUS "* recursively load libssh headers :   *.h   *")
-message (STATUS "********************************************")
-message (STATUS "")
-file(GLOB_RECURSE LIBSSH_HEADERS   ${LIBSSH_DIRECTORY}/*.h)
-foreach(header IN LISTS LIBSSH_HEADERS)
-    message ("found: ${header}")
-endforeach(header ${LIBSSH_DIRECTORY})
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${THISPROJECT}
@@ -80,7 +70,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_HEADERS}
         ${PROJECT_SOURCES}
         ${QXLSX_HEADERS}
-        ${LIBSSH_HEADERS}
+
         crio-gui2.qrc
     )
 # Define target properties for Android with Qt 6 as:
@@ -94,7 +84,6 @@ else()
             ${PROJECT_HEADERS}
             ${PROJECT_SOURCES}
             ${QXLSX_HEADERS}
-            ${LIBSSH_HEADERS}
             crio-gui2.qrc
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
@@ -105,7 +94,6 @@ else()
             ${PROJECT_HEADERS}
             ${PROJECT_SOURCES}
             ${QXLSX_HEADERS}
-            ${LIBSSH_HEADERS}
             crio-gui2.qrc
         )
     endif()
@@ -113,16 +101,20 @@ endif()
 
 target_include_directories(${THISPROJECT} PUBLIC ${SOURCES_DIRECTORY})
 target_include_directories(${THISPROJECT} PUBLIC ${QXLSX_HEADERS_DIRECTORY})
-target_include_directories(${THISPROJECT} PUBLIC ${LIBSSH_DIRECTORY})
+
 
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Charts REQUIRED)
+
+
 
 target_link_libraries(${THISPROJECT} PRIVATE Qt${QT_VERSION_MAJOR}::Core
                                              Qt${QT_VERSION_MAJOR}::Gui
                                              Qt${QT_VERSION_MAJOR}::Widgets
                                              Qt${QT_VERSION_MAJOR}::Network
-                                             Qt${QT_VERSION_MAJOR}::Concurrent)
+                                             Qt${QT_VERSION_MAJOR}::Concurrent
+                                             Qt${QT_VERSION_MAJOR}::Charts)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC QXlsxQt6)
 

@@ -11,7 +11,7 @@ class QCrioModulesDataExtractor : public QObject {
 public:
     explicit QCrioModulesDataExtractor(QObject *parent = nullptr);
     void extractCurrentModules(const QStringList &iniFiles, QComboBox *modulesComboBox, QComboBox *channelsComboBox);
-
+    void extractVoltageModules(const QStringList &iniFiles, QComboBox *modulesComboBox, QComboBox *channelsComboBox);
 };
 
 #endif // QCrioModulesDataExtractor_H

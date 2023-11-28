@@ -11,7 +11,7 @@ public:
     explicit QtTcpClient(QObject *parent = nullptr);
     void connectToServer(const QString &host, quint16 port);
     void sendReadCurrentRequest(const QString &moduleAlias, unsigned int channelIndex);
-
+    void sendReadVoltageRequest(const QString &moduleAlias, unsigned int channelIndex);
 private:
     QTcpSocket *socket;
     QString m_lastRequest = "";
@@ -23,6 +23,8 @@ private slots:
 
 signals:
     void currentReadedSignal(const QString &response);
+    void voltageReadedSignal(const QString &response);
+    void errorSignal(const QString &response);
 };
 
 #endif // QTTCPCLIENT_H

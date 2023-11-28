@@ -14,6 +14,7 @@ class QSSHCommand : public QObject {
     Q_PROPERTY(QString keyFile READ keyFile WRITE setKeyFile NOTIFY keyFileChanged)
     Q_PROPERTY(QString password READ password WRITE setPassword NOTIFY passwordChanged)
     Q_PROPERTY(QString userName READ userName WRITE setUserName NOTIFY userNameChanged)
+    Q_PROPERTY(bool    withSsh2 READ getWithLibSSH2 WRITE setWithLibSSH2 NOTIFY withLibSSH2Changed)
 public:
     QSSHCommand(QObject *parent = nullptr);
 
@@ -37,6 +38,9 @@ public:
 
     const QString &userName() const;
     void setUserName(const QString &newUserName);
+
+    bool getWithLibSSH2() const;
+    void setWithLibSSH2(bool newWithLibSSH2);
 
     void getModulesDefinitions();
     void downloadModulesDefinitions(QString params);
@@ -64,6 +68,7 @@ signals:
     void passwordChanged();
 
     void userNameChanged();
+    void withLibSSH2Changed();
 
 private:
     QString constructSSHCommand(const QString &command, const QString &parameter) const;
@@ -77,6 +82,8 @@ private:
     QString m_keyFile;
     QProcess m_process;
     QString lastCommand;
+
+    bool m_withLibSSH2 = false;
 
 private slots:
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus);

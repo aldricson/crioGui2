@@ -434,7 +434,9 @@ void QBetterSwitchButton::paintEvent(QPaintEvent *event)
 
 void QBetterSwitchButton::mousePressEvent(QMouseEvent *)
 {
-    state = ! state;
-    emit stateChanged();
-    moveSwitch(state,true);
+    if (isEnabled) {
+        state = !state;
+        emit stateChanged();
+        moveSwitch(state, true);
+    }
 }

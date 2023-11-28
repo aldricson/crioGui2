@@ -88,14 +88,14 @@ void QSSHCommand::executeProcess(const QString &command)
 
 bool QSSHCommand::getWithLibSSH2() const
 {
-    return withLibSSH2;
+    return m_withLibSSH2;
 }
 
 void QSSHCommand::setWithLibSSH2(bool newWithLibSSH2)
 {
-    if (withLibSSH2 == newWithLibSSH2)
+    if (m_withLibSSH2 == newWithLibSSH2)
         return;
-    withLibSSH2 = newWithLibSSH2;
+    m_withLibSSH2 = newWithLibSSH2;
     emit withLibSSH2Changed();
 }
 
@@ -114,7 +114,7 @@ void QSSHCommand::setUserName(const QString &newUserName)
 
 void QSSHCommand::getModulesDefinitions()
 {
-    if (!withLibSSH2)
+    if (!m_withLibSSH2)
     {
         sendCommand("getModuleList", "");
     }
@@ -126,7 +126,7 @@ void QSSHCommand::getModulesDefinitions()
 
 void QSSHCommand::downloadModulesDefinitions(QString params)
 {
-    if (!withLibSSH2)
+    if (!m_withLibSSH2)
     {
         sendCommand("downloadModule", params);
     }
@@ -143,7 +143,7 @@ void QSSHCommand::isServerRunning()
 
 void QSSHCommand::listFolder(QString path)
 {
-    if (!withLibSSH2)
+    if (!m_withLibSSH2)
     {
         sendCommand("dir",path);
     }
@@ -155,7 +155,7 @@ void QSSHCommand::listFolder(QString path)
 
 void QSSHCommand::startServer()
 {
-    if (!withLibSSH2)
+    if (!m_withLibSSH2)
     {
         sendCommand("startServer","");
     }
@@ -167,7 +167,7 @@ void QSSHCommand::startServer()
 
 void QSSHCommand::stopServer()
 {
-    if (!withLibSSH2)
+    if (!m_withLibSSH2)
     {
         sendCommand("stopServer");
     }

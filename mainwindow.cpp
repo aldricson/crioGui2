@@ -33,6 +33,7 @@ QWidget *MainWindow::createCrioViewTab()
     QWidget *tab = new QWidget();
     createModuleList();
     setupCurrentReader();
+    setupVoltageReader();
     QGridLayout *layout = new QGridLayout(tab);
 
     ipLabel = new QLabel(this);
@@ -73,27 +74,34 @@ QWidget *MainWindow::createCrioViewTab()
     startStopServerSwitchButton->setEnabled(false);
     connect (startStopServerSwitchButton, &QBetterSwitchButton::stateChanged,this, &MainWindow::onServerChangeState, Qt::QueuedConnection);
 
+    truthOScope = new QOScope(this);
 
     terminalOutput = new QMultiLineTextVisualizer(this);
 
-    layout->addWidget(ipLabel       , 0,0,1,1,Qt::AlignHCenter);
-    layout->addWidget(loginLabel    , 0,1,1,1,Qt::AlignHCenter);
-    layout->addWidget(passwordLabel , 0,2,1,1,Qt::AlignHCenter);
+    layout->addWidget(ipLabel          , 0,0,1,1,Qt::AlignHCenter);
+    layout->addWidget(loginLabel       , 0,1,1,1,Qt::AlignHCenter);
+    layout->addWidget(passwordLabel    , 0,2,1,1,Qt::AlignHCenter);
+    layout->addWidget(serverStateLabel , 0,4,1,1, Qt::AlignHCenter);
 
     layout->addWidget(ipEdit         , 1,0,1,1);
     layout->addWidget(loginEdit      , 1,1,1,1);
     layout->addWidget(passwordEdit   , 1,2,1,1);
     layout->addWidget(connectButton  , 1,3,1,1);
+    layout->addWidget(startStopServerSwitchButton , 1,4,1,1, Qt::AlignHCenter);
 
     layout->addWidget(moduleListLabel , 2,0,1,1,Qt::AlignHCenter);
     layout->addWidget(modulesListView , 3,0,1,1);
     layout->addWidget(modulesLoadingProgressBar , 4,0,1,1);
 
-    layout->addWidget(serverStateLabel            , 2,1,1,1, Qt::AlignHCenter);
-    layout->addWidget(startStopServerSwitchButton , 3,1,1,1, Qt::AlignHCenter);
-    layout->addWidget(currentTestWidget           , 4,1,1,1);
+
+
+    layout->addWidget(currentTestWidget           , 3,1,1,1);
+    layout->addWidget(voltageTestWidget           , 3,2,1,1);
+    layout->addWidget(truthOScope                 , 3,3,1,2);
 
     layout->addWidget(terminalOutput              , 5,0,1,5);
+
+    currentTestWidget->setTruthOScope(truthOScope);
     // Add widgets to layout as needed
     return tab;
 }
@@ -191,6 +199,14 @@ void MainWindow::setupCurrentReader()
     connect (currentTestWidget, &QReadCurrentTestWidget::logLastResponse,this,&MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
 }
 
+void MainWindow::setupVoltageReader()
+{
+    voltageTestWidget = new QReadVoltageTestWidget(tcpClient,this);
+    voltageTestWidget->setEnabled(false);
+    connect (voltageTestWidget, &QReadVoltageTestWidget::logLastRequest, this, &MainWindow::onCommandServerLogRequest,Qt::QueuedConnection);
+    connect (voltageTestWidget, &QReadVoltageTestWidget::logLastResponse, this, &MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
+}
+
 
 //************ CRIO *******************
 
@@ -273,10 +289,21 @@ void MainWindow::onModuleListRetrived(const QString &output, const QString &last
     modulesListView->setModel(moduleListModel);
     currentModuleIndex = 0;
     terminalOutput->addLastOutput("succes");
+
     currentModulesPathList.clear();
+    voltageModulesPathList.clear();
     for (int i=0;i<moduleList.count();++i)
     {
-        if (moduleList[i].contains("NI9208"))  currentModulesPathList.append(iniModulesLocalPath+moduleList[i]);
+        if  (moduleList[i].contains("NI9208"))
+        {
+            currentModulesPathList.append(iniModulesLocalPath+moduleList[i]);
+            qInfo()<<iniModulesLocalPath<<moduleList[i]<<" added to currentModulesPathList";
+        }
+        else if (moduleList[i].contains("NI9239"))
+        {
+           voltageModulesPathList.append(iniModulesLocalPath+moduleList[i]);
+           qInfo()<<iniModulesLocalPath<<moduleList[i]<<" added to voltageModulesPathList";
+        }
     }
     downloadModulesDefinitions(currentModuleIndex);
 }
@@ -309,6 +336,12 @@ void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString 
                 moduleExtractor->extractCurrentModules(currentModulesPathList,
                                                        currentTestWidget->getModulesComboBox(),
                                                        currentTestWidget->getChannelComboBox());
+
+                moduleExtractor->extractVoltageModules(voltageModulesPathList,
+                                                       voltageTestWidget->getModulesComboBox(),
+                                                       voltageTestWidget->getChannelComboBox());
+
+
                 tcpClient->connectToServer(ipEdit->ipAddress(),commandPort);
             }
 
@@ -343,6 +376,7 @@ void MainWindow::onServerGetState(const bool &isRunning, const QString &lastComm
    lastSshCommand = lastCommand;
    terminalOutput->addLastCommand(lastCommand);
    currentTestWidget->setEnabled(isRunning);
+   voltageTestWidget->setEnabled(isRunning);
    if (startStopServerSwitchButton->getState()!=isRunning)
    {
        startStopServerSwitchButton->setEnabled(true);
@@ -362,6 +396,7 @@ void MainWindow::onServerGetState(const bool &isRunning, const QString &lastComm
    {
        terminalOutput->addLastError("failed to stop server");
        currentTestWidget->setEnabled(false);
+       voltageTestWidget->setEnabled(false);
        fromStopServer = false;
    }
    else
@@ -384,6 +419,7 @@ void MainWindow::onServerStoped(const QString &lastCommand)
     lastSshCommand =  lastCommand;
     terminalOutput->addLastOutput("server stoped");
     currentTestWidget->setEnabled(false);
+    voltageTestWidget->setEnabled(false);
 
 }
 
@@ -398,13 +434,12 @@ void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString
     startStopServerSwitchButton->setState(true);
     startStopServerSwitchButton->blockSignals(false);
     startStopServerSwitchButton->update();
-    if (!fromStartServer)
-    {
-       sshCommand->getModulesDefinitions();
-    }
+    moduleList.clear();
+    sshCommand->getModulesDefinitions();
     fromStartServer = false;
     fromStopServer  = false;
     currentTestWidget->setEnabled(true);
+    voltageTestWidget->setEnabled(true);
     serverStateLabel->setText("server status:\n running on\nsession"+QString::number(screenSession));
 }
 

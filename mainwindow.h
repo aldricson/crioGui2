@@ -23,6 +23,8 @@
 #include "./src/QtTcpClient.h"
 #include "./src/stringUtils.h"
 #include "./src/QReadCurrentTestWidget.h"
+#include "./src/QReadVoltageTestWidget.h"
+#include "./src/QOScope.h"
 #include "./src/QBetterSwitchButton.h"
 #include "./src/QMultiLineTextVisualizer.h"
 #include "./src/QCrioModulesDataExtractor.h"
@@ -66,13 +68,16 @@ private:
 
     QStringList      moduleList             ;
     QStringList      currentModulesPathList ;
+    QStringList      voltageModulesPathList ;
     QStringListModel *moduleListModel           = nullptr;
     QLabel           *moduleListLabel           = nullptr;
     QListView        *modulesListView           = nullptr;
     QProgressBar     *modulesLoadingProgressBar = nullptr;
     int              currentModuleIndex;
 
-    QReadCurrentTestWidget *currentTestWidget;
+    QReadCurrentTestWidget *currentTestWidget  = nullptr;
+    QReadVoltageTestWidget *voltageTestWidget  = nullptr;
+    QOScope                *truthOScope        = nullptr;
     QLabel                 *serverStateLabel;
     QBetterSwitchButton    *startStopServerSwitchButton;
     bool                   currentServerState = false;
@@ -84,6 +89,7 @@ private:
     QtTcpClient     *tcpClient;
     void            setupTCPClient    ();
     void            setupCurrentReader();
+    void            setupVoltageReader();
 
 
     QWidget *createCrioViewTab         ();
