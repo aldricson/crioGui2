@@ -13,6 +13,7 @@ class QIpAddressEditor : public QWidget {
 public:
     explicit QIpAddressEditor(QWidget *parent = nullptr);
     QString ipAddress() const;
+    void setIp(const QString &ipAddress);
 
 private:
     QLineEdit *byte1;

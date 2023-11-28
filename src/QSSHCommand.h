@@ -44,6 +44,7 @@ public:
 
     void getModulesDefinitions();
     void downloadModulesDefinitions(QString params);
+    void downloadModbusSetup(QString iniModbusSetupPath);
     void isServerRunning();
     void listFolder(QString path);
     void startServer();
@@ -56,6 +57,7 @@ signals:
     void listFileDoneSignal          (const QString &output     , const QString &lastCommand);
     void moduleListRetrievedSignal   (const QString &output     , const QString &lastCommand);
     void moduleDownloadedSignal      (const QString &output     , const QString &lastCommand);
+    void modbusSetupDownloadedSignal (const QString &output     , const QString &lastCommand);
     void serverStateSignal           (const bool &isRunning     , const QString &lastCommand);
     void serverStartedSignal         (const QString &lastCommand);
     void serverStartSuccesfullSignal (const int &screenSession  , const QString &lastCommand);

@@ -28,6 +28,7 @@
 #include "./src/QBetterSwitchButton.h"
 #include "./src/QMultiLineTextVisualizer.h"
 #include "./src/QCrioModulesDataExtractor.h"
+#include "./src/QModbusSetupViewer.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -82,6 +83,8 @@ private:
     QBetterSwitchButton    *startStopServerSwitchButton;
     bool                   currentServerState = false;
 
+    QModbusSetupViewer     *modbusSetupViewer  = nullptr;
+
     QMultiLineTextVisualizer *terminalOutput = nullptr;
 
 
@@ -104,7 +107,8 @@ private:
     const int     sshPort     = 22  ;
     const quint16 commandPort = 8222;
 
-    QString   iniModulesLocalPath                          ;
+    QString   iniModulesLocalPath = ""                     ;
+    QString   iniModbusSetupPath  = ""                     ;
     void      handleConnection               ()            ;
     void      downloadModulesDefinitions     (int index)   ;
     QString   retriveStringFromListViewIndex (int rowIndex);

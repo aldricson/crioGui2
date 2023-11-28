@@ -71,4 +71,39 @@ void QIpAddressEditor::movePrev(QLineEdit *currentEdit) {
     else if (currentEdit == byte2) byte1->setFocus();
 }
 
-// Add more implementation details as required for your application
+void QIpAddressEditor::setIp(const QString &ipAddress)
+{
+    QStringList ipParts = ipAddress.split('.');
+    if (ipParts.size() != 4)
+    {
+        // Handle the error - either log it, show a message to the user, or throw an exception.
+        return;
+    }
+
+    bool ok;
+    int byteValue;
+
+    // Setting each byte after validating
+    for (int i = 0; i < 4; ++i)
+    {
+        byteValue = ipParts[i].toInt(&ok);
+        if (!ok || byteValue < 0 || byteValue > 255)
+        {
+            // Handle the error for invalid byte value
+            return;
+        }
+
+        switch (i)
+        {
+            case 0: byte1->setText(ipParts[i]); break;
+            case 1: byte2->setText(ipParts[i]); break;
+            case 2: byte3->setText(ipParts[i]); break;
+            case 3: byte4->setText(ipParts[i]); break;
+            default: break; // This should never happen
+        }
+    }
+
+    // Emit signal if needed
+    emit ipAddressChanged(ipAddress);
+}
+

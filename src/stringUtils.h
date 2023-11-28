@@ -12,6 +12,37 @@
 #include <QRegularExpression>
 
 
+static inline bool textToBool(const QString &text) {
+    QString lowerText = text.trimmed().toLower(); // Convert to lower case and trim whitespace
+
+    // Check for true values
+    if (lowerText == "true" || lowerText == "1" || lowerText == "yes") {
+        return true;
+    }
+    // Check for false values
+    else if (lowerText == "false" || lowerText == "0" || lowerText == "no") {
+        return false;
+    }
+
+    // For any other input, you might want to handle it as an error
+    // For example, throw an exception, return a default value, or assert.
+    // This part depends on how you want your program to behave in case of unexpected input.
+
+    // Throwing an exception (remove this part if you prefer a different error handling strategy)
+    throw std::invalid_argument("Invalid input for boolean conversion");
+}
+
+
+static inline QString boolToText(const bool &_boolean)
+{
+    if (_boolean)
+        return "true";
+    else
+       return "false";
+}
+
+
+
 static inline std::string removeSpacesFromCharStar(const char* str) {
     int length = strlen(str);
     std::string result;

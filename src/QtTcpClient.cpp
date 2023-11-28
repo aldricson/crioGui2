@@ -4,7 +4,8 @@
 QtTcpClient::QtTcpClient(QObject *parent) : QObject(parent), socket(new QTcpSocket(this)) {
     connect(socket, &QTcpSocket::connected, this, &QtTcpClient::onConnected);
     connect(socket, &QTcpSocket::readyRead, this, &QtTcpClient::onDataReceived);
-    connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(displayError(QAbstractSocket::SocketError)));
+    connect(socket, &QTcpSocket::errorOccurred, this, &QtTcpClient::displayError);
+
 }
 
 void QtTcpClient::connectToServer(const QString &host, quint16 port)

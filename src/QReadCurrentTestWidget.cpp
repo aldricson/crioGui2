@@ -10,7 +10,7 @@ QReadCurrentTestWidget::QReadCurrentTestWidget(QtTcpClient *tcpClient, QWidget *
 void QReadCurrentTestWidget::onReadOneShotClicked()
 {
     emit logLastRequest("readCurrent on " + getModulesComboBox()->currentText() + getChannelComboBox()->currentText());
-    // Call the appropriate function to send the request
+     m_tcpClient->sendReadVoltageRequest(m_modulesComboBox->currentText(),m_channelComboBox->currentIndex());
 }
 
 void QReadCurrentTestWidget::onReadDone(const QString &result)

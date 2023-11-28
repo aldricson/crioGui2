@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
+    iniModbusSetupPath  = QCoreApplication::applicationDirPath()+"/"+"modbus"+"/";
     moduleExtractor     = new QCrioModulesDataExtractor(this);
     setupTCPClient();
     ui->setupUi(this);
@@ -108,9 +109,12 @@ QWidget *MainWindow::createCrioViewTab()
 
 QWidget *MainWindow::createModbusViewTab()
 {
+    modbusSetupViewer = new QModbusSetupViewer(this);
+    modbusSetupViewer->setFileName(iniModbusSetupPath+"modbus.ini");
+
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-    // Add widgets to layout as needed
+    layout->addWidget(modbusSetupViewer,0,0,1,1);
     return tab;
 }
 

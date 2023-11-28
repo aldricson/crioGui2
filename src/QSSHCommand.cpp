@@ -29,6 +29,10 @@ void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
         emit moduleDownloadedSignal(output,lastCommand);
     }
+    else if (lastCommand == "downloadModbusSetup")
+    {
+        emit modbusSetupDownloadedSignal(output,lastCommand);
+    }
     else if (lastCommand == "serverState")
     {
         if (output == "Program is not running in any screen session.\nProgram is not running.\n")
@@ -136,9 +140,31 @@ void QSSHCommand::downloadModulesDefinitions(QString params)
     }
 }
 
+void QSSHCommand::downloadModbusSetup(QString iniModbusSetupPath)
+{
+    if (!m_withLibSSH2)
+    {
+        QString params = "/home/dataDrill/modBus.ini "+iniModbusSetupPath+"modBus.ini";
+        sendCommand("downloadModbusSetup", params);
+    }
+    else
+    {
+        //TODO
+    }
+}
+
 void QSSHCommand::isServerRunning()
 {
-    sendCommand("serverState","");
+    if (!m_withLibSSH2)
+    {
+        sendCommand("serverState","");
+    }
+    else
+    {
+        //TODO
+    }
+
+
 }
 
 void QSSHCommand::listFolder(QString path)
