@@ -30,5 +30,9 @@ if "%COMMAND%" == "getModuleList" (
     :: %PARAMETER1% is the full path of the source file on the remote machine
     :: %PARAMETER2% is the full path for the file on the local machine
     pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
+) else if "%COMMAND%" == "downloadModbusSetup" (
+    :: Use pscp to download a file from the remote machine to the local machine
+    :: %PARAMETER1% is the full path of the source file on the remote machine
+    :: %PARAMETER2% is the full path for the file on the local machine
+    pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
 )
-
