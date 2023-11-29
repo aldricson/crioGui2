@@ -1,11 +1,13 @@
 // QBaseAnalogReaderTestWidget.cpp
 #include "QBaseAnalogReaderTestWidget.h"
 
-QBaseAnalogReaderTestWidget::QBaseAnalogReaderTestWidget(QtTcpClient *tcpClient, const QString& groupBoxTitle, QWidget *parent)
+QBaseAnalogReaderTestWidget::QBaseAnalogReaderTestWidget(const QString& groupBoxTitle, QWidget *parent)
     : QWidget(parent)
 {
-    m_tcpClient = tcpClient;
+    m_client = new QtTcpClient(this);
     m_timer = new QTimer(this);
+    m_truthOScope = new QOScope(this);
+    m_truthOScope->setFixedWidth(100);
     setupUi(groupBoxTitle);
 }
 
@@ -44,6 +46,7 @@ void QBaseAnalogReaderTestWidget::setupUi(const QString& groupBoxTitle)
     layout->addWidget(m_resultLabel, 2, 0, 1, 2, Qt::AlignCenter);
     layout->addWidget(m_readOneShotButton, 3, 0, 1, 1, Qt::AlignCenter);
     layout->addWidget(m_pollButton, 3, 1, 1, 1, Qt::AlignCenter);
+    layout->addWidget(m_truthOScope, 0,2,4,1);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(m_groupBox);
@@ -70,12 +73,34 @@ QOScope *QBaseAnalogReaderTestWidget::truthOScope() const
     return m_truthOScope;
 }
 
-void QBaseAnalogReaderTestWidget::setTruthOScope(QOScope *newTruthOScope)
+const QString &QBaseAnalogReaderTestWidget::host() const
 {
-    if (m_truthOScope == newTruthOScope)
-        return;
-    m_truthOScope = newTruthOScope;
-    m_truthOScope->setVerticalScale(0.0, 0.005);
-    m_truthOScope->setHorizontalMaxSamples(60);
-    emit truthOScopeChanged();
+    return m_host;
 }
+
+void QBaseAnalogReaderTestWidget::setHost(const QString &newHost)
+{
+    if (m_host == newHost)
+        return;
+    m_host = newHost;
+    emit hostChanged();
+}
+
+quint16 QBaseAnalogReaderTestWidget::port() const
+{
+    return m_port;
+}
+
+void QBaseAnalogReaderTestWidget::setPort(quint16 newPort)
+{
+    if (m_port == newPort)
+        return;
+    m_port = newPort;
+    emit portChanged();
+}
+
+void QBaseAnalogReaderTestWidget::tcpConnect()
+{
+    m_client->connectToServer(m_host,m_port);
+}
+

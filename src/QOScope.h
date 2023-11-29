@@ -2,6 +2,7 @@
 #define QOSCOPE_H
 
 #include <QWidget>
+#include <QWheelEvent>
 
 class QChartView;
 class QLineSeries;
@@ -23,6 +24,7 @@ public:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void showEvent( QShowEvent* event ) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     QChartView* chartView;

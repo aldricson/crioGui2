@@ -9,18 +9,19 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <QTimer>
-#include "QtTcpClient.h"
 #include "QOScope.h"
+#include "QtTcpClient.h"
 #include "stringUtils.h"
 
 class QBaseAnalogReaderTestWidget : public QWidget {
     Q_OBJECT
     Q_PROPERTY(QComboBox *modulesComboBox READ getModulesComboBox WRITE setModulesComboBox NOTIFY modulesComboBoxChanged)
     Q_PROPERTY(QComboBox *channelComboBox READ getChannelComboBox WRITE setChannelComboBox NOTIFY channelComboBoxChanged)
-    Q_PROPERTY(QOScope *truthOScope READ truthOScope WRITE setTruthOScope NOTIFY truthOScopeChanged)
+    Q_PROPERTY(QString host READ host WRITE setHost NOTIFY hostChanged)
+    Q_PROPERTY(quint16 port READ port WRITE setPort NOTIFY portChanged)
 
 public:
-    QBaseAnalogReaderTestWidget(QtTcpClient* tcpClient, const QString& groupBoxTitle, QWidget *parent = nullptr);
+    QBaseAnalogReaderTestWidget(const QString& groupBoxTitle, QWidget *parent = nullptr);
 
     QComboBox *getModulesComboBox() const;
     void setModulesComboBox(QComboBox *newModulesComboBox);
@@ -29,15 +30,25 @@ public:
     void setChannelComboBox(QComboBox *newChannelComboBox);
 
     QOScope *truthOScope() const;
-    void setTruthOScope(QOScope *newTruthOScope);
 
+    const QString &host() const;
+    void setHost(const QString &newHost);
+
+    quint16 port() const;
+    void setPort(quint16 newPort);
+
+    void tcpConnect();
 signals:
     void modulesComboBoxChanged();
     void channelComboBoxChanged();
     void logLastRequest(const QString &lastRequest);
     void logLastResponse(const QString &lastResponse);
+    void logLastError   (const QString &lastError);
 
-    void truthOScopeChanged();
+
+    void hostChanged();
+
+    void portChanged();
 
 private slots:
     virtual void onReadOneShotClicked() = 0; // Pure virtual function
@@ -56,14 +67,18 @@ protected:
     QPushButton *m_readOneShotButton = nullptr;
     QPushButton *m_pollButton = nullptr;
     QLabel *m_resultLabel = nullptr;
-    QtTcpClient *m_tcpClient = nullptr;
     QOScope *m_truthOScope = nullptr;
     QTimer *m_timer = nullptr;
     bool m_inPoll = false;
+    QString m_host;
+    quint16 m_port;
+    QtTcpClient *m_client = nullptr;
 
     void setupUi(const QString& groupBoxTitle);
 
 
+
+private:
 
 };
 

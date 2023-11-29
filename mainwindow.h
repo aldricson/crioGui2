@@ -24,7 +24,6 @@
 #include "./src/stringUtils.h"
 #include "./src/QReadCurrentTestWidget.h"
 #include "./src/QReadVoltageTestWidget.h"
-#include "./src/QOScope.h"
 #include "./src/QBetterSwitchButton.h"
 #include "./src/QMultiLineTextVisualizer.h"
 #include "./src/QCrioModulesDataExtractor.h"
@@ -78,7 +77,7 @@ private:
 
     QReadCurrentTestWidget *currentTestWidget  = nullptr;
     QReadVoltageTestWidget *voltageTestWidget  = nullptr;
-    QOScope                *truthOScope        = nullptr;
+
     QLabel                 *serverStateLabel;
     QBetterSwitchButton    *startStopServerSwitchButton;
     bool                   currentServerState = false;
@@ -89,8 +88,8 @@ private:
 
 
     QIniTreeWidget  *iniTreeWidget;
-    QtTcpClient     *tcpClient;
-    void            setupTCPClient    ();
+    //QtTcpClient     *tcpClient;
+    //void            setupTCPClient    ();
     void            setupCurrentReader();
     void            setupVoltageReader();
 
@@ -126,6 +125,7 @@ private slots:
 
     void onCommandServerLogRequest  (const QString &request);
     void onCommandServerLogResponse (const QString &response);
+    void onCommanServerLogError     (const QString &error);
 
 
 

@@ -15,6 +15,7 @@ public:
     void addLastOutput(const QString &lastOutput);
     void addLastError(const QString &lastError);
 
+
 public slots:
     void clearText();
 

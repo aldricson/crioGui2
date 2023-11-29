@@ -203,7 +203,7 @@ void MainWindow::setupCurrentReader()
     currentTestWidget->setEnabled(false);
     connect (currentTestWidget, &QReadCurrentTestWidget::logLastRequest,this,&MainWindow::onCommandServerLogRequest,Qt::QueuedConnection);
     connect (currentTestWidget, &QReadCurrentTestWidget::logLastResponse,this,&MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
-    connect (currentTestWidget, &QReadCurrentTestWidget::logLastError, this, &MainWindow::onCommanServerLogError,Qt::QueuedConnection);
+    connect (currentTestWidget, &QReadCurrentTestWidget::logLastError,  this, &MainWindow::onCommanServerLogError,Qt::QueuedConnection);
 }
 
 

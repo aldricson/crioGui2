@@ -1,32 +1,40 @@
 #include "QReadVoltageTestWidget.h"
 
 
-QReadVoltageTestWidget::QReadVoltageTestWidget(QtTcpClient *tcpClient, QWidget *parent)
-    : QBaseAnalogReaderTestWidget(tcpClient, "Read Voltage Test", parent)
+QReadVoltageTestWidget::QReadVoltageTestWidget( QWidget *parent)
+    : QBaseAnalogReaderTestWidget( "Read Voltage Test", parent)
 {
     // Additional setup specific to QReadCurrentTestWidget if needed
     bindTCPClient();
+    m_truthOScope->setVerticalScale(-10.0, 10.0);
+    m_truthOScope->setHorizontalMaxSamples(60);
 }
+
 
 void QReadVoltageTestWidget::onReadOneShotClicked()
 {
     emit logLastRequest("readVoltage on " + getModulesComboBox()->currentText() + getChannelComboBox()->currentText());
-         m_tcpClient->sendReadVoltageRequest(m_modulesComboBox->currentText(),m_channelComboBox->currentIndex());
+    m_client->sendReadVoltageRequest(m_modulesComboBox->currentText(),m_channelComboBox->currentIndex());
 }
 
 void QReadVoltageTestWidget::onReadDone(const QString &result)
 {
-
+    if (result.contains("NAK"))
+    {
+        emit logLastError(result);
+        return;
+    }
     m_resultLabel->setText(result);
     if (m_truthOScope)
     {
         m_truthOScope->addSample(result.toDouble());
     }
+    emit logLastResponse(result);
 }
 
 void QReadVoltageTestWidget::bindTCPClient()
 {
-    connect(m_tcpClient, &QtTcpClient::voltageReadedSignal, this, &QReadVoltageTestWidget::onReadDone, Qt::QueuedConnection);
+    connect(m_client, &QtTcpClient::voltageReadedSignal, this, &QReadVoltageTestWidget::onReadDone, Qt::QueuedConnection);
 
 }
 

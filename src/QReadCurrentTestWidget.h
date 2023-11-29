@@ -7,7 +7,7 @@ class QReadCurrentTestWidget : public QBaseAnalogReaderTestWidget {
     Q_OBJECT
 
 public:
-    QReadCurrentTestWidget(QtTcpClient *tcpClient, QWidget *parent = nullptr);
+    QReadCurrentTestWidget(QWidget *parent);
 
 private slots:
     void onReadOneShotClicked() override;
@@ -18,6 +18,7 @@ public slots:
 
 protected:
     void bindTCPClient();
+
 };
 
 #endif // QReadCurrentTestWidget_H

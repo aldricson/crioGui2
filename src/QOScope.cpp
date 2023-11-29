@@ -125,3 +125,32 @@ void QOScope::showEvent(QShowEvent *event)
         m_initialized = true;
     }
 }
+
+void QOScope::wheelEvent(QWheelEvent *event)
+{
+   /* const double zoomFactor = 1.1; // Adjust this factor as needed
+
+    // Use event->position() instead of event->pos()
+    QPointF mousePos = chart->mapToValue(event->position(), lineSeries);
+
+    double xCenterRatio = (mousePos.x() - xAxis->min()) / (xAxis->max() - xAxis->min());
+    double yCenterRatio = (mousePos.y() - yAxis->min()) / (yAxis->max() - yAxis->min());
+
+    if (event->angleDelta().y() > 0) {
+        // Zoom in
+        xAxis->setRange(xAxis->min() + (1 - zoomFactor) * xCenterRatio * (xAxis->max() - xAxis->min()),
+                        xAxis->max() - (1 - zoomFactor) * (1 - xCenterRatio) * (xAxis->max() - xAxis->min()));
+        yAxis->setRange(yAxis->min() + (1 - zoomFactor) * yCenterRatio * (yAxis->max() - yAxis->min()),
+                        yAxis->max() - (1 - zoomFactor) * (1 - yCenterRatio) * (yAxis->max() - yAxis->min()));
+    } else {
+        // Zoom out
+        xAxis->setRange(xAxis->min() - (zoomFactor - 1) * xCenterRatio * (xAxis->max() - xAxis->min()),
+                        xAxis->max() + (zoomFactor - 1) * (1 - xCenterRatio) * (xAxis->max() - xAxis->min()));
+        yAxis->setRange(yAxis->min() - (zoomFactor - 1) * yCenterRatio * (yAxis->max() - yAxis->min()),
+                        yAxis->max() + (zoomFactor - 1) * (1 - yCenterRatio) * (yAxis->max() - yAxis->min()));
+    }
+
+    chart->update();*/
+}
+
+
