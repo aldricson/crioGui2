@@ -11,6 +11,7 @@ public:
 
 private slots:
     void onReadOneShotClicked() override;
+    void onPollClicked()        override;
 
 public slots:
     void onReadDone(const QString &result) override;

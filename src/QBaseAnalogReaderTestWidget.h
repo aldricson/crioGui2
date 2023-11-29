@@ -11,6 +11,7 @@
 #include <QTimer>
 #include "QtTcpClient.h"
 #include "QOScope.h"
+#include "stringUtils.h"
 
 class QBaseAnalogReaderTestWidget : public QWidget {
     Q_OBJECT
@@ -40,7 +41,8 @@ signals:
 
 private slots:
     virtual void onReadOneShotClicked() = 0; // Pure virtual function
-    void onPollClicked();
+    virtual void onPollClicked()        = 0;
+
 
 public slots:
     virtual void onReadDone(const QString &result) = 0; //pure virtual
@@ -57,6 +59,7 @@ protected:
     QtTcpClient *m_tcpClient = nullptr;
     QOScope *m_truthOScope = nullptr;
     QTimer *m_timer = nullptr;
+    bool m_inPoll = false;
 
     void setupUi(const QString& groupBoxTitle);
 

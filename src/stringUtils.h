@@ -10,6 +10,38 @@
 #include <QString>
 #include <QStringList>
 #include <QRegularExpression>
+#include <cctype>
+
+
+static inline int indexFind(const QString& str) {
+    // Find the starting position of the numeric part from the end of the string
+    int startPos = -1;
+    for (int i = str.size() - 1; i >= 0; --i) {
+        if (!isdigit(str[i].unicode())) {
+            startPos = i + 1;
+            break;
+        }
+    }
+
+    // If the entire string is numeric or no numeric part is found
+    if (startPos == -1) {
+        startPos = 0;
+    }
+
+    // Extract the numeric part
+    QString numPart = str.mid(startPos);
+
+    // Convert to integer
+    bool ok;
+    int number = numPart.toInt(&ok);
+
+    // If conversion fails, return a default value (e.g., 0) or handle the error
+    if (!ok) {
+        return 0; // Or handle the error as required
+    }
+
+    return number;
+}
 
 
 static inline bool textToBool(const QString &text) {

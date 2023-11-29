@@ -79,8 +79,3 @@ void QBaseAnalogReaderTestWidget::setTruthOScope(QOScope *newTruthOScope)
     m_truthOScope->setHorizontalMaxSamples(60);
     emit truthOScopeChanged();
 }
-
-void QBaseAnalogReaderTestWidget::onPollClicked()
-{
-//
-}
