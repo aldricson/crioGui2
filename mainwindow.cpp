@@ -9,7 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
     iniModbusSetupPath  = QCoreApplication::applicationDirPath()+"/"+"modbus"+"/";
     moduleExtractor     = new QCrioModulesDataExtractor(this);
-   // setupTCPClient();
+
     ui->setupUi(this);
     tabWidget = new QTabWidget(this);
 
@@ -20,7 +20,61 @@ MainWindow::MainWindow(QWidget *parent)
     tabWidget->addTab(createDeviceParametersTab(), tr("DeviceParameters"));
     tabWidget->addTab(createMappingTableTab(), tr("MappingTable"));
     setCentralWidget(tabWidget);
+}
 
+//This is the first slot triggered when we click on the connect button
+void MainWindow::handleConnection()
+{
+    //1) we check if the object already exists, if yes...
+    if (sshCommand != nullptr)
+    {
+        //destroy it
+        delete(sshCommand);
+        sshCommand = nullptr;
+    }
+    //Then we can create it and connect all the slots
+    setupSSHModule();
+    crioViewTab->connectButton()->setEnabled(false);
+    sshCommand->isServerRunning();
+}
+
+void MainWindow::setupSSHModule()
+{
+    sshCommand = new QSSHCommand(this);
+    // Set the SSH connection details from the user interface
+    sshCommand->setHostName(crioViewTab->ipEdit()->ipAddress());
+    sshCommand->setUserName(crioViewTab->loginEdit()->text());
+    sshCommand->setPassword(crioViewTab->passwordEdit()->text());
+    //sshCommand->setPortNum(22); // Optional if using default SSH port
+
+                        //sent when a "cd /whatever/folder; ls" request
+                        //has completed
+    connect(sshCommand, &QSSHCommand::listFileDoneSignal           , this , &MainWindow::onLsCommandExecuted       ,Qt::QueuedConnection);
+
+                        //sent when list the ini files
+                        //for devices modules has completed
+    connect(sshCommand, &QSSHCommand::moduleListRetrievedSignal    , this , &MainWindow::onModuleListRetrived      ,Qt::QueuedConnection);
+
+                        //sent when modules ini files are
+                        //effectiveley downloaded
+    connect(sshCommand, &QSSHCommand::moduleDownloadedSignal       , this , &MainWindow::onModuleIniFileDownloaded ,Qt::QueuedConnection);
+
+                        //Guess this one...
+    connect(sshCommand, &QSSHCommand::errorOccurredSignal          , this , &MainWindow::onSSHError                ,Qt::QueuedConnection);
+
+                        //sent when a request for server state
+                        //(up or down) has a completed
+    connect(sshCommand, &QSSHCommand::serverStateSignal            , this , &MainWindow::onServerGetState          ,Qt::QueuedConnection);
+
+                        //sent when the server starting sequence begin
+    connect(sshCommand, &QSSHCommand::serverStartedSignal          , this , &MainWindow::onServerStarted           ,Qt::QueuedConnection);
+
+                        //sent when the server starting squence
+                        //is succesfully finished
+    connect(sshCommand, &QSSHCommand::serverStartSuccesfullSignal  , this , &MainWindow::onServerStartSuccesfull   ,Qt::QueuedConnection);
+
+                        //sent whan the server has been stoped
+    connect(sshCommand, &QSSHCommand::serverStopedSignal           , this , &MainWindow::onServerStoped            ,Qt::QueuedConnection);
 }
 
 MainWindow::~MainWindow()
@@ -31,82 +85,16 @@ MainWindow::~MainWindow()
 
 QWidget *MainWindow::createCrioViewTab()
 {
-    QWidget *tab = new QWidget();
-    qInfo()<<"create module list";
-    createModuleList();
-    qInfo()<<"Ok";
+    // This will create an instance of the QCrioViewWidget
+    crioViewTab = new QCrioViewWidget(this);
+    // Any additional configurations or connections specific to MainWindow can be done here
     setupCurrentReader();
     setupVoltageReader();
-    QGridLayout *layout = new QGridLayout(tab);
+    //this to show the inifile in a specialized widget if we double click an item
+    connect(crioViewTab->modulesListView(), &QListView::doubleClicked, this, &MainWindow::onModuleItemDoubleClicked, Qt::QueuedConnection);
+    connect (crioViewTab, &QCrioViewWidget::sshConnectionAskedSignal,this,&MainWindow::handleConnection,Qt::QueuedConnection);
+    return crioViewTab;
 
-    ipLabel = new QLabel(this);
-    ipLabel->setText("Crio Ip");
-    ipEdit  = new QIpAddressEditor(this);
-
-    passwordLabel = new QLabel(this);
-    passwordLabel->setText("password");
-    passwordEdit = new QLineEdit(this);
-    passwordEdit->setEchoMode(QLineEdit::Password);
-
-    // Create the show/hide password toggle action
-    togglePasswordAction = passwordEdit->addAction(QIcon(":/images/cacher.png"), QLineEdit::TrailingPosition);
-    togglePasswordAction->setCheckable(true);
-
-    // Connect the action's toggled signal to a lambda that updates the echo mode
-    connect(togglePasswordAction, &QAction::toggled, this, [this](bool checked)
-    {
-        togglePasswordAction->setIcon(QIcon(checked ? ":/images/oeil.png" : ":/images/cacher.png"));
-        passwordEdit->setEchoMode(checked ? QLineEdit::Normal : QLineEdit::Password);
-    });
-
-    loginLabel= new QLabel   (this);
-    loginLabel->setText("login");
-    loginEdit = new QLineEdit(this);
-
-    // Set up the connection button
-    connectButton = new QPushButton(tr("Connect"), this);
-    connect(connectButton, &QPushButton::clicked, this, &MainWindow::handleConnection);
-
-    serverStateLabel = new QLabel(tr("server status"),this);
-    startStopServerSwitchButton = new QBetterSwitchButton(" stoped ",
-                                                          " active ",
-                                                          QColor(0xf54444),
-                                                          QColor(0x449ef5),
-                                                          QColor(0x44f547),
-                                                          false);
-    startStopServerSwitchButton->setEnabled(false);
-    connect (startStopServerSwitchButton, &QBetterSwitchButton::stateChanged,this, &MainWindow::onServerChangeState, Qt::QueuedConnection);
-
-
-
-    terminalOutput = new QMultiLineTextVisualizer(this);
-
-    layout->addWidget(ipLabel          , 0,0,1,1,Qt::AlignHCenter);
-    layout->addWidget(loginLabel       , 0,1,1,1,Qt::AlignHCenter);
-    layout->addWidget(passwordLabel    , 0,2,1,1,Qt::AlignHCenter);
-    layout->addWidget(serverStateLabel , 0,4,1,1, Qt::AlignHCenter);
-
-    layout->addWidget(ipEdit         , 1,0,1,1);
-    layout->addWidget(loginEdit      , 1,1,1,1);
-    layout->addWidget(passwordEdit   , 1,2,1,1);
-    layout->addWidget(connectButton  , 1,3,1,1);
-    layout->addWidget(startStopServerSwitchButton , 1,4,1,1, Qt::AlignHCenter);
-
-    layout->addWidget(moduleListLabel , 2,0,1,1,Qt::AlignHCenter);
-    layout->addWidget(modulesListView , 3,0,1,1);
-    layout->addWidget(modulesLoadingProgressBar , 4,0,1,1);
-
-
-
-    layout->addWidget(currentTestWidget           , 3,1,1,1);
-    layout->addWidget(voltageTestWidget           , 3,2,1,1);
-
-
-    layout->addWidget(terminalOutput              , 5,0,1,5);
-
-
-    // Add widgets to layout as needed
-    return tab;
 }
 
 QWidget *MainWindow::createModbusViewTab()
@@ -142,79 +130,28 @@ QWidget *MainWindow::createMappingTableTab()
 {
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-
     // Add widgets to layout as needed
     return tab;
 }
 
-void MainWindow::createModuleList()
-{
-    moduleListModel = new QStringListModel(this);
-    moduleListLabel = new QLabel(this);
-    moduleListLabel->setText("modules list:");
-    modulesListView           = new QListView(this);
-    modulesListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    connect(modulesListView, &QListView::doubleClicked, this, &MainWindow::onModuleItemDoubleClicked, Qt::QueuedConnection);
-    modulesLoadingProgressBar = new QProgressBar(this);
-}
-
-
-
-void MainWindow::handleConnection()
-{
-    qDebug()<<"***** Etape 1 *******";
-    if (sshCommand != nullptr)
-    {
-
-        delete(sshCommand);
-        sshCommand = nullptr;
-    }
-    setupSSHModule();
-    connectButton->setEnabled(false);
-    sshCommand->isServerRunning();
-}
-
-void MainWindow::setupSSHModule()
-{
-    sshCommand = new QSSHCommand(this);
-    // Set the SSH connection details
-    sshCommand->setHostName(ipEdit->ipAddress());
-    sshCommand->setUserName(loginEdit->text());
-    sshCommand->setPassword(passwordEdit->text());
-    //sshCommand->setPortNum(22); // Optional if using default SSH port
-    connect(sshCommand, &QSSHCommand::listFileDoneSignal           , this , &MainWindow::onLsCommandExecuted       ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::moduleListRetrievedSignal    , this , &MainWindow::onModuleListRetrived      ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::moduleDownloadedSignal       , this , &MainWindow::onModuleIniFileDownloaded ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::errorOccurredSignal          , this , &MainWindow::onSSHError                ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::serverStateSignal            , this , &MainWindow::onServerGetState          ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::serverStartedSignal          , this , &MainWindow::onServerStarted           ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::serverStartSuccesfullSignal  , this , &MainWindow::onServerStartSuccesfull   ,Qt::QueuedConnection);
-    connect(sshCommand, &QSSHCommand::serverStopedSignal           , this , &MainWindow::onServerStoped            ,Qt::QueuedConnection);
-}
-
-/*void MainWindow::setupTCPClient()
-{
-    tcpClient  = new QtTcpClient(this);
-}*/
 
 void MainWindow::setupCurrentReader()
 {
-    currentTestWidget = new QReadCurrentTestWidget(this);
-    currentTestWidget->setEnabled(false);
-    connect (currentTestWidget, &QReadCurrentTestWidget::logLastRequest,this,&MainWindow::onCommandServerLogRequest,Qt::QueuedConnection);
-    connect (currentTestWidget, &QReadCurrentTestWidget::logLastResponse,this,&MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
-    connect (currentTestWidget, &QReadCurrentTestWidget::logLastError, this, &MainWindow::onCommanServerLogError,Qt::QueuedConnection);
+
+    crioViewTab->currentTestWidget()->setEnabled(false);
+    connect (crioViewTab->currentTestWidget(), &QReadCurrentTestWidget::logLastRequest, this ,&MainWindow::onCommandServerLogRequest, Qt::QueuedConnection);
+    connect (crioViewTab->currentTestWidget(), &QReadCurrentTestWidget::logLastResponse,this ,&MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
+    connect (crioViewTab->currentTestWidget(), &QReadCurrentTestWidget::logLastError,   this, &MainWindow::onCommanServerLogError,    Qt::QueuedConnection);
 }
 
 
 
 void MainWindow::setupVoltageReader()
 {
-    voltageTestWidget = new QReadVoltageTestWidget(this);
-    voltageTestWidget->setEnabled(false);
-    connect (voltageTestWidget, &QReadVoltageTestWidget::logLastRequest, this, &MainWindow::onCommandServerLogRequest,Qt::QueuedConnection);
-    connect (voltageTestWidget, &QReadVoltageTestWidget::logLastResponse, this, &MainWindow::onCommandServerLogResponse,Qt::QueuedConnection);
-    connect (voltageTestWidget, &QReadVoltageTestWidget::logLastError, this, &MainWindow::onCommanServerLogError,Qt::QueuedConnection);
+    crioViewTab->voltageTestWidget()->setEnabled(false);
+    connect (crioViewTab->voltageTestWidget(), &QReadVoltageTestWidget::logLastRequest,  this, &MainWindow::onCommandServerLogRequest,  Qt::QueuedConnection);
+    connect (crioViewTab->voltageTestWidget(), &QReadVoltageTestWidget::logLastResponse, this, &MainWindow::onCommandServerLogResponse, Qt::QueuedConnection);
+    connect (crioViewTab->voltageTestWidget(), &QReadVoltageTestWidget::logLastError,    this, &MainWindow::onCommanServerLogError,     Qt::QueuedConnection);
 }
 
 
@@ -233,7 +170,7 @@ void MainWindow::downloadModulesDefinitions(int index)
 QString MainWindow::retriveStringFromListViewIndex(int rowIndex)
 {
     // Get the model associated with the ListView
-    QAbstractItemModel* model = modulesListView->model();
+    QAbstractItemModel* model = crioViewTab->modulesListView()->model();
     // Check if the model is valid
     if (model)
     {
@@ -281,27 +218,28 @@ void MainWindow::onSSHError(const QString &errorString, const QString &lastComma
 void MainWindow::onLsCommandExecuted(const QString &output, const QString &lastCommand)
 {
     lastSshCommand = lastCommand;
-    terminalOutput->addLastCommand(lastCommand);
-    terminalOutput->addLastOutput("fileList:\n"+output);
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastOutput("fileList:\n"+output);
 }
 
 void MainWindow::onModuleListRetrived(const QString &output, const QString &lastCommand)
 {
+    qInfo()<<"enter onModuleListRetrived";
     lastSshCommand = lastCommand;
-    terminalOutput->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
     moduleList = output.split("\n", Qt::SkipEmptyParts);
-    modulesLoadingProgressBar->setMaximum(moduleList.count()-1);
-    modulesLoadingProgressBar->setMinimum(0);
-    modulesLoadingProgressBar->setValue(0);
+    //reset the progress bar min/max/value
+    crioViewTab->onResetModuleLoadProgressBar(0,moduleList.count()-1,0);
     // Sort the list based on the number in the filename
     sortQStringListBySuffix(moduleList,"_");
-    moduleListModel->setStringList(moduleList);
-    modulesListView->setModel(moduleListModel);
+    //update the interface withe the module list
+    crioViewTab->onUpdateModelList(moduleList);
+    //reset lists and trackig index
     currentModuleIndex = 0;
-    terminalOutput->addLastOutput("succes");
-
     currentModulesPathList.clear();
     voltageModulesPathList.clear();
+    //sort each module by type (analogic current, voltage and so on)
+    //and fill dedicated lists for easier search later
     for (int i=0;i<moduleList.count();++i)
     {
         if  (moduleList[i].contains("NI9208"))
@@ -315,6 +253,7 @@ void MainWindow::onModuleListRetrived(const QString &output, const QString &last
            qInfo()<<iniModulesLocalPath<<moduleList[i]<<" added to voltageModulesPathList";
         }
     }
+    //then we can download all the ini files
     downloadModulesDefinitions(currentModuleIndex);
 }
 
@@ -323,12 +262,12 @@ void MainWindow::onModuleListRetrived(const QString &output, const QString &last
 void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString &lastCommand)
 {
     lastSshCommand = lastCommand;
-    terminalOutput->addLastCommand(lastCommand);
-    terminalOutput->addLastOutput(output);
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastOutput(output);
     if (output.contains("100%"))
     {
-        modulesLoadingProgressBar->setValue(modulesLoadingProgressBar->value() + 1);
-        modulesLoadingProgressBar->update();
+        crioViewTab->modulesLoadingProgressBar()->setValue(crioViewTab->modulesLoadingProgressBar()->value() + 1);
+        crioViewTab->modulesLoadingProgressBar()->update();
 
         if (currentModuleIndex < moduleList.count() - 1)
         {
@@ -338,30 +277,8 @@ void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString 
         }
         else
         {
-            // All modules are downloaded
-            startStopServerSwitchButton->setEnabled(true);
-            startStopServerSwitchButton->update();
-            if (startStopServerSwitchButton->getState())
-            {
-                moduleExtractor->extractCurrentModules(currentModulesPathList,
-                                                       currentTestWidget->getModulesComboBox(),
-                                                       currentTestWidget->getChannelComboBox());
-
-                moduleExtractor->extractVoltageModules(voltageModulesPathList,
-                                                       voltageTestWidget->getModulesComboBox(),
-                                                       voltageTestWidget->getChannelComboBox());
-
-              currentTestWidget->setHost(ipEdit->ipAddress());
-              currentTestWidget->setPort(commandPort);
-              currentTestWidget->tcpConnect();
-
-              voltageTestWidget->setHost(ipEdit->ipAddress());
-              voltageTestWidget->setPort(commandPort);
-              voltageTestWidget->tcpConnect();
-
-            }
-
-
+            // All modules are downloaded, let's update the user interface
+            crioViewTab->onUpdateControlsAfterModulesDownloaded(moduleExtractor,currentModulesPathList,voltageModulesPathList,commandPort);
         }
     }
 }
@@ -371,7 +288,7 @@ void MainWindow::onModuleItemDoubleClicked(const QModelIndex &index)
 {
   if (index.isValid())
   {
-          QString fileName = iniModulesLocalPath + moduleListModel->data(index, Qt::DisplayRole).toString();
+          QString fileName = iniModulesLocalPath + crioViewTab->moduleListModel()->data(index, Qt::DisplayRole).toString();
           qInfo()<<fileName;
           iniTreeWidget->loadFromFile(fileName);
 
@@ -390,29 +307,20 @@ void MainWindow::onModuleItemDoubleClicked(const QModelIndex &index)
 void MainWindow::onServerGetState(const bool &isRunning, const QString &lastCommand)
 {
    lastSshCommand = lastCommand;
-   terminalOutput->addLastCommand(lastCommand);
-   currentTestWidget->setEnabled(isRunning);
-   voltageTestWidget->setEnabled(isRunning);
-   if (startStopServerSwitchButton->getState()!=isRunning)
-   {
-       startStopServerSwitchButton->setEnabled(true);
-       startStopServerSwitchButton->setState(isRunning);
-       startStopServerSwitchButton->update();
-       startStopServerSwitchButton->setEnabled(false);
-
-   }
-   startStopServerSwitchButton->setEnabled(false);
+   //enable or disable some controls in reaction to the server state
+   crioViewTab->onUpdateControlsInReactionToServerState(lastCommand,isRunning);
+   //make the user unable to stop the server until the modules are effectively downloaded
+   crioViewTab->startStopServerSwitchButton()->setEnabled(false);
    if (fromStartServer && isRunning)
    {
-      qDebug()<<"Server started";
-      fromStartServer = false;
+       fromStartServer = false;
       //TODO
    }
    else if (fromStopServer && isRunning)
    {
-       terminalOutput->addLastError("failed to stop server");
-       currentTestWidget->setEnabled(false);
-       voltageTestWidget->setEnabled(false);
+       //if stop server was asked and the state is still running then the stop script failed
+       crioViewTab->onUpdateControlsInReactionOfaStopFailure();
+       //so the next time we are here, it's not to verify the stoped state
        fromStopServer = false;
    }
    else
@@ -425,59 +333,54 @@ void MainWindow::onServerStarted(const QString &lastCommand)
 {
     lastSshCommand =  lastCommand;
     fromStartServer = true;
-    terminalOutput->addLastCommand (lastCommand);
-    terminalOutput->addLastOutput("server starting");
+    crioViewTab->terminalOutput()->addLastCommand (lastCommand);
+    crioViewTab->terminalOutput()->addLastOutput("server starting");
     sshCommand->isServerRunning();
 }
 
 void MainWindow::onServerStoped(const QString &lastCommand)
 {
     lastSshCommand =  lastCommand;
-    terminalOutput->addLastOutput("server stoped");
-    currentTestWidget->setEnabled(false);
-    voltageTestWidget->setEnabled(false);
+    crioViewTab->terminalOutput()->addLastOutput("server stoped");
+    crioViewTab->currentTestWidget()->setEnabled(false);
+    crioViewTab->voltageTestWidget()->setEnabled(false);
 
 }
 
 void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString &lastCommand)
 {
+    // the server has started succesfully
+    //keep track of the last command
     lastSshCommand =  lastCommand;
-    terminalOutput->addLastCommand (lastCommand);
-    terminalOutput->addLastOutput("Server started successfully");
-    QMessageBox::information(nullptr, "Server Status", "Server started successfully", QMessageBox::Ok);
-    startStopServerSwitchButton->setEnabled(true);
-    startStopServerSwitchButton->blockSignals(true);
-    startStopServerSwitchButton->setState(true);
-    startStopServerSwitchButton->blockSignals(false);
-    startStopServerSwitchButton->update();
+    //this will update the user interface
+    crioViewTab->onServerStartSuccesfull(screenSession,lastCommand);
+    //clear the module list
     moduleList.clear();
+    //and get the module list, when the module list is executed sshCommand will trigger onModuleListRetrived signal with the output
     sshCommand->getModulesDefinitions();
     fromStartServer = false;
     fromStopServer  = false;
-    currentTestWidget->setEnabled(true);
-    voltageTestWidget->setEnabled(true);
-    serverStateLabel->setText("server status:\n running on\nsession"+QString::number(screenSession));
 }
 
 void MainWindow::onCommandServerLogRequest(const QString &request)
 {
-    terminalOutput->addLastCommand(request);
+    crioViewTab->terminalOutput()->addLastCommand(request);
 }
 
 void MainWindow::onCommandServerLogResponse(const QString &response)
 {
-    terminalOutput->addLastOutput(response);
+    crioViewTab->terminalOutput()->addLastOutput(response);
 }
 
 void MainWindow::onCommanServerLogError(const QString &error)
 {
-    terminalOutput->addLastError(error);
+    crioViewTab->terminalOutput()->addLastError(error);
 }
 
 void MainWindow::onServerChangeState()
 {
 
-    if (startStopServerSwitchButton->getState())
+    if (crioViewTab->startStopServerSwitchButton()->getState())
     {
         sshCommand->startServer();
     }

@@ -51,6 +51,9 @@ public:
     void stopServer ();
 
 
+    const QString &getLastCommand() const;
+    void setLastCommand(const QString &newLastCommand);
+
 signals:
     void commandExecutedSignal       (const QString &output     , const QString &lastCommand);
     void errorOccurredSignal         (const QString &errorString, const QString &lastCommand);
@@ -72,6 +75,8 @@ signals:
     void userNameChanged();
     void withLibSSH2Changed();
 
+    void lastCommandChanged(const QString &lastCommand);
+
 private:
     QString constructSSHCommand(const QString &command, const QString &parameter) const;
     void executeProcess(const QString &command);
@@ -86,6 +91,8 @@ private:
     QString lastCommand;
 
     bool m_withLibSSH2 = false;
+
+    Q_PROPERTY(QString lastCommand READ getLastCommand WRITE setLastCommand NOTIFY lastCommandChanged)
 
 private slots:
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus);

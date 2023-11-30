@@ -1,5 +1,20 @@
 #include "QSSHCommand.h"
 
+
+/**
+ * @brief Constructor for the QSSHCommand class.
+ *
+ * @param parent The parent QObject (default is nullptr).
+ *
+ * @details
+ * - Initializes the QSSHCommand object with the default SSH port number (22).
+ * - Connects the 'finished' signal of the QProcess (m_process) to the 'processFinished' method of this class.
+ *   When the QProcess completes the execution of a command, 'processFinished' will be called.
+ * - Connects the 'errorOccurred' signal of the QProcess to a lambda function.
+ *   The lambda function is used to check if an error occurred during the execution of the process.
+ *   If an error occurs (other than an unknown error), the 'errorOccurredSignal' is emitted with details of the error and the last executed command.
+ * - The lambda function captures 'this' pointer to access class members and emit signals from within the lambda body.
+ */
 QSSHCommand::QSSHCommand(QObject *parent) : QObject(parent), m_portNum(22)
 {
     connect(&m_process, &QProcess::finished, this, &QSSHCommand::processFinished);
@@ -10,55 +25,86 @@ QSSHCommand::QSSHCommand(QObject *parent) : QObject(parent), m_portNum(22)
     });
 }
 
+
+/**
+ * @brief Called when the QProcess instance finishes executing a command.
+ *
+ * This method handles the output from the executed command and emits appropriate signals
+ * based on the command that was executed.
+ *
+ * @param exitCode The exit code of the process.
+ * @param exitStatus The exit status of the process.
+ *
+ * @details
+ * - First attempts to read the standard output of the command.
+ * - If there's no standard output, it reads the standard error instead.
+ * - Uses the lastCommand variable to determine which command was executed last.
+ * - Emits a specific signal corresponding to the executed command with the output.
+ * - For the 'serverState' command, it checks if the server is running and emits the signal with the server state.
+ * - Resets the lastCommand variable at the end to maintain a clean state for the next command execution.
+ */
 void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+    // Read the standard output of the finished process.
     QString output = m_process.readAllStandardOutput();
+    // If the standard output is empty, read the standard error instead.
     if (output.isEmpty()) {
         output = m_process.readAllStandardError();
     }
+    // Check which command was executed last and emit the corresponding signal.
+    // Each if/else if block handles a different command.
+    // Handling 'dir' command - used for listing directory contents.
     if (lastCommand == "dir")
     {
-        emit listFileDoneSignal(output,lastCommand);
+        emit listFileDoneSignal(output, lastCommand);
     }
-    if (lastCommand == "getModuleList")
+    // Handling 'getModuleList' command - used to retrieve a list of modules.
+    else if (lastCommand == "getModuleList")
     {
-        emit moduleListRetrievedSignal(output,lastCommand);
+        emit moduleListRetrievedSignal(output, lastCommand);
     }
-    else if (lastCommand =="downloadModule")
+    // Handling 'downloadModule' command - used for downloading module definitions.
+    else if (lastCommand == "downloadModule")
     {
-
-        emit moduleDownloadedSignal(output,lastCommand);
+        emit moduleDownloadedSignal(output, lastCommand);
     }
+    // Handling 'downloadModbusSetup' command - used for downloading Modbus setup.
     else if (lastCommand == "downloadModbusSetup")
     {
-        emit modbusSetupDownloadedSignal(output,lastCommand);
+        emit modbusSetupDownloadedSignal(output, lastCommand);
     }
+    // Handling 'serverState' command - used to check the state of the server.
     else if (lastCommand == "serverState")
     {
+        qInfo() << "Server state received: " << output;
+        // Check if the server is running or not and emit signal accordingly.
         if (output == "Program is not running in any screen session.\nProgram is not running.\n")
         {
-           emit serverStateSignal(false,lastCommand);
+            emit serverStateSignal(false, lastCommand);
         }
         else
         {
+            // Extract the screen session number if the server is running.
             int screenSession = extractNumberFromSessionString(output);
-            emit serverStartSuccesfullSignal(screenSession,lastCommand);
+            emit serverStartSuccesfullSignal(screenSession, lastCommand);
         }
     }
+    // Handling 'startServer' command - used for starting the server.
     else if (lastCommand == "startServer")
     {
         emit serverStartedSignal(lastCommand);
     }
+    // Handling 'stopServer' command - used for stopping the server.
     else if (lastCommand == "stopServer")
     {
        emit serverStopedSignal(lastCommand);
     }
+    // Handling other commands - generic signal for command execution.
     else
     {
-        emit commandExecutedSignal(output,lastCommand);
+        emit commandExecutedSignal(output, lastCommand);
     }
-
-    // Reset lastCommand for the next execution
+    // Reset lastCommand for the next execution to ensure clean state.
     lastCommand.clear();
 }
 
@@ -70,6 +116,21 @@ void QSSHCommand::sendCommand(const QString &command, const QString &parameter)
     executeProcess(commandLine);
 }
 
+
+/**
+ * @brief Constructs a command line string for executing an SSH command.
+ *
+ * @param command The SSH command to be executed.
+ * @param parameter The additional parameter for the SSH command.
+ * @return QString The constructed command line for execution.
+ *
+ * @details
+ * - Constructs a command line string to be used with QProcess for executing SSH commands.
+ * - The command line includes the path to a batch script (`ssh.bat`), host name, user name, password, port number, and the actual SSH command with its parameter.
+ * - The batch script (`ssh.bat`) is assumed to be located in the application's directory.
+ * - The command and parameter are concatenated to form the full SSH command.
+ * - This method centralizes the construction of the SSH command line, ensuring consistency and ease of maintenance.
+ */
 QString QSSHCommand::constructSSHCommand(const QString &command, const QString &parameter) const
 {
     // Construct the command to call the batch script with the necessary arguments
@@ -88,6 +149,19 @@ QString QSSHCommand::constructSSHCommand(const QString &command, const QString &
 void QSSHCommand::executeProcess(const QString &command)
 {
     m_process.start("cmd", QStringList() << "/c" << command);
+}
+
+const QString &QSSHCommand::getLastCommand() const
+{
+    return lastCommand;
+}
+
+void QSSHCommand::setLastCommand(const QString &newLastCommand)
+{
+    if (lastCommand == newLastCommand)
+        return;
+    lastCommand = newLastCommand;
+    emit lastCommandChanged(lastCommand);
 }
 
 bool QSSHCommand::getWithLibSSH2() const
