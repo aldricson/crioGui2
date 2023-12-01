@@ -12,6 +12,7 @@
 #include "QBetterSwitchButton.h"
 #include "stringUtils.h"
 #include "QIpAddressEditor.h"
+#include "QModbusAnalogViewer.h"
 
 class QLineEdit;
 class QSpinBox;
@@ -39,23 +40,24 @@ signals:
 private:
     QSettings *settings                    = nullptr;
 
-    QGroupBox           *m_containerGroupBox          = nullptr; // GroupBox for Modbus Setup
-    QGroupBox           *m_compatibilityLayerGroupBox = nullptr;
-    QGroupBox           *m_modbusCapacitiesGroupBox   = nullptr;
-    QGroupBox           *m_networkGroupBox            = nullptr;
-    QLineEdit           *coilsLineEdit                = nullptr;
-    QLineEdit           *discreteInputsLineEdit       = nullptr;
-    QLineEdit           *holdingRegistersLineEdit     = nullptr;
-    QLineEdit           *inputRegistersLineEdit       = nullptr;
-    QLineEdit           *listeningPortLineEdit        = nullptr;
-    QIpAddressEditor    *listeningInterfaceIpEdit     = nullptr;
-    QBetterSwitchButton *compatibilityLayerSwitch     = nullptr;
-    QLineEdit           *nbAnalogsInLineEdit          = nullptr;
-    QLineEdit           *nbAnalogsOutLineEdit         = nullptr;
-    QLineEdit           *nbCountersLineEdit           = nullptr;
-    QPushButton         *reloadButton                 = nullptr;
-    QPushButton         *saveButton                   = nullptr;
-    QPushButton         *uploadButton                 = nullptr;
+    QGroupBox                  *m_containerGroupBox          = nullptr; // GroupBox for Modbus Setup
+    QGroupBox                  *m_compatibilityLayerGroupBox = nullptr;
+    QGroupBox                  *m_modbusCapacitiesGroupBox   = nullptr;
+    QGroupBox                  *m_networkGroupBox            = nullptr;
+    QLineEdit                  *coilsLineEdit                = nullptr;
+    QLineEdit                  *discreteInputsLineEdit       = nullptr;
+    QLineEdit                  *holdingRegistersLineEdit     = nullptr;
+    QLineEdit                  *inputRegistersLineEdit       = nullptr;
+    QLineEdit                  *listeningPortLineEdit        = nullptr;
+    QIpAddressEditor           *listeningInterfaceIpEdit     = nullptr;
+    QBetterSwitchButton        *compatibilityLayerSwitch     = nullptr;
+    QLineEdit                  *nbAnalogsInLineEdit          = nullptr;
+    QLineEdit                  *nbAnalogsOutLineEdit         = nullptr;
+    QLineEdit                  *nbCountersLineEdit           = nullptr;
+    QPushButton                *reloadButton                 = nullptr;
+    QPushButton                *saveButton                   = nullptr;
+    QPushButton                *uploadButton                 = nullptr;
+    QModbusAnalogViewer        *m_analogsViewer              = nullptr;
 
     QString m_fileName;
 

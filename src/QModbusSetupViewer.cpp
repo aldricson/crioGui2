@@ -75,9 +75,11 @@ QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     // Set the main layout to m_containerGroupBox
     m_containerGroupBox->setLayout(mainLayout);
 
+    m_analogsViewer = new QModbusAnalogViewer(this);
     // Create a layout for this widget and add the m_containerGroupBox to it
-    QVBoxLayout *thisLayout = new QVBoxLayout(this);
-    thisLayout->addWidget(m_containerGroupBox);
+    QGridLayout *thisLayout = new QGridLayout(this);
+    thisLayout->addWidget(m_containerGroupBox,0,0,1,1);
+    thisLayout->addWidget(m_analogsViewer    ,0,1,1,1);
     setLayout(thisLayout);
 }
 

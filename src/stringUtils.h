@@ -278,18 +278,12 @@ static inline unsigned int strToUnsignedInt(const std::string& str, bool& ok) {
 
 static inline void sortQStringListBySuffix(QStringList &list, const QString &separator)
 {
-    qDebug()<<"***** Etape 1 *******";
     QRegularExpression regex(separator + "(\\d+).ini");
-    qDebug()<<"***** Etape 2 *******";
     std::sort(list.begin(), list.end(), [&regex](const QString &a, const QString &b)
     {
-       qDebug()<<"***** Etape 3 *******";
        QRegularExpressionMatch matchA = regex.match(a);
-       qDebug()<<"***** Etape 4 *******";
        QRegularExpressionMatch matchB = regex.match(b);
-       qDebug()<<"***** Etape 5 *******";
        int numberA = matchA.hasMatch() ? matchA.captured(1).toInt() : INT_MAX;
-       qDebug()<<"***** Etape 6 *******";
        int numberB = matchB.hasMatch() ? matchB.captured(1).toInt() : INT_MAX;
        return numberA < numberB;
     });

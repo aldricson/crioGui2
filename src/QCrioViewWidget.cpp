@@ -1,3 +1,30 @@
+/**
+ * @file QCrioViewWidget.cpp
+ * @brief Implementation of the QCrioViewWidget class for managing UI components and interactions in the CrioView tab.
+ *
+ * @class QCrioViewWidget
+ * @extends QWidget
+ *
+ * The QCrioViewWidget class is designed to encapsulate all user interface components and functionalities specific to the CrioView tab.
+ * It includes various UI elements like IP address editor, login and password fields, connect button, server state label, and custom test widgets.
+ *
+ * Key functionalities and methods include:
+ * - Initialization of UI components and layout configuration.
+ * - Setup of signal-slot connections for UI interactions.
+ * - Handlers for changes in UI components like IP address, login, and password.
+ * - Emitting signals for SSH connection requests and server state changes.
+ * - Utility methods for updating UI components based on server and module status.
+ *
+ * @note This class is responsible for handling the user interface logic related to the CrioView tab, separating it from the main window logic.
+ *
+ * Detailed method documentation:
+ * - setupUi(): Initializes and configures all UI elements within the widget.
+ * - setupConnections(): Establishes signal-slot connections for interactive UI components.
+ * - handleConnection(): Slot triggered by the connect button; emits a signal to request an SSH connection.
+ * - onServerChangeState(): Slot triggered by the server state switch button; emits a signal to indicate a change in the server state.
+ * - Various setters and getters for individual UI components, providing encapsulated access and modification of UI elements.
+ */
+
 #include "QCrioViewWidget.h"
 #include <QIcon>
 

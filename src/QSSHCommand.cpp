@@ -1,3 +1,33 @@
+/**
+ * @file QSSHCommand.cpp
+ * @brief Implementation of the QSSHCommand class for executing SSH commands.
+ *
+ * @class QSSHCommand
+ * @extends QObject
+ *
+ * The QSSHCommand class provides a way to execute SSH commands using QProcess.
+ * It encapsulates the details of constructing and executing SSH commands and handles the output and errors.
+ *
+ * Key functionalities and methods include:
+ * - Executing SSH commands using a batch script and handling their output and errors.
+ * - Emitting signals based on the output of executed commands.
+ * - Providing a flexible interface for setting SSH connection details.
+ * - Handling various SSH-related tasks such as checking server state, downloading files, and managing server start/stop.
+ *
+ * @note This class abstracts the complexity of executing SSH commands and interpreting their output, making it easier to perform SSH operations from the main application.
+ *
+ * Detailed method documentation:
+ * - processFinished(): Called when a command execution is completed; processes the output and emits appropriate signals.
+ * - sendCommand(): Constructs and sends an SSH command for execution.
+ * - constructSSHCommand(): Constructs the full command line string for executing an SSH command using a batch script.
+ * - executeProcess(): Executes the given command line using QProcess.
+ * - setHostName(), setUserName(), setPassword(), etc.: Setters for SSH connection details.
+ * - getModulesDefinitions(), downloadModulesDefinitions(), startServer(), stopServer(), etc.: Methods to perform specific SSH tasks.
+ *
+ * The class also includes signals that are emitted when specific SSH tasks are completed, providing a way for other parts of the application to respond to SSH command results.
+ */
+
+
 #include "QSSHCommand.h"
 
 
@@ -112,7 +142,6 @@ void QSSHCommand::sendCommand(const QString &command, const QString &parameter)
 {
     lastCommand = command; // Store the command
     QString commandLine = constructSSHCommand(command, parameter);
-    qDebug() << "Executing command:" << commandLine;
     executeProcess(commandLine);
 }
 

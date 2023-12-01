@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
     iniModbusSetupPath  = QCoreApplication::applicationDirPath()+"/"+"modbus"+"/";
-    moduleExtractor     = new QCrioModulesDataExtractor(this);
+    moduleExtractor         = new QCrioModulesDataExtractor(this);
 
     ui->setupUi(this);
     tabWidget = new QTabWidget(this);
@@ -32,6 +32,7 @@ void MainWindow::handleConnection()
         delete(sshCommand);
         sshCommand = nullptr;
     }
+
     //Then we can create it and connect all the slots
     setupSSHModule();
     crioViewTab->connectButton()->setEnabled(false);
@@ -58,6 +59,10 @@ void MainWindow::setupSSHModule()
                         //sent when modules ini files are
                         //effectiveley downloaded
     connect(sshCommand, &QSSHCommand::moduleDownloadedSignal       , this , &MainWindow::onModuleIniFileDownloaded ,Qt::QueuedConnection);
+
+                        //sent when modbus.ini is
+                        //effectively downloaded
+    connect(sshCommand, &QSSHCommand::modbusSetupDownloadedSignal  , this, &MainWindow::onModubusParamFileDownloaded, Qt::QueuedConnection);
 
                         //Guess this one...
     connect(sshCommand, &QSSHCommand::errorOccurredSignal          , this , &MainWindow::onSSHError                ,Qt::QueuedConnection);
@@ -164,7 +169,6 @@ void MainWindow::downloadModulesDefinitions(int index)
     QString params = "/home/dataDrill/"+fileName+" "+iniModulesLocalPath+fileName;
     qDebug()<<params;
     sshCommand->downloadModulesDefinitions(params);
-
 }
 
 QString MainWindow::retriveStringFromListViewIndex(int rowIndex)
@@ -186,7 +190,6 @@ QString MainWindow::retriveStringFromListViewIndex(int rowIndex)
             {
                 QString text = itemData.toString();
                 // Now 'text' contains the text of the item at the specified index
-                qDebug() << "Text at index" << rowIndex << ":" << text;
                 return text;
             }
             else
@@ -245,12 +248,10 @@ void MainWindow::onModuleListRetrived(const QString &output, const QString &last
         if  (moduleList[i].contains("NI9208"))
         {
             currentModulesPathList.append(iniModulesLocalPath+moduleList[i]);
-            qInfo()<<iniModulesLocalPath<<moduleList[i]<<" added to currentModulesPathList";
         }
         else if (moduleList[i].contains("NI9239"))
         {
            voltageModulesPathList.append(iniModulesLocalPath+moduleList[i]);
-           qInfo()<<iniModulesLocalPath<<moduleList[i]<<" added to voltageModulesPathList";
         }
     }
     //then we can download all the ini files
@@ -279,8 +280,19 @@ void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString 
         {
             // All modules are downloaded, let's update the user interface
             crioViewTab->onUpdateControlsAfterModulesDownloaded(moduleExtractor,currentModulesPathList,voltageModulesPathList,commandPort);
+            sshCommand->downloadModbusSetup(iniModbusSetupPath);
         }
     }
+}
+
+void MainWindow::onModubusParamFileDownloaded(const QString &output, const QString &lastCommand)
+{
+    lastSshCommand = lastCommand;
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastOutput(output);
+    modbusSetupViewer->setFileName(iniModbusSetupPath+"modbus.ini");
+    modbusSetupViewer->loadFromFile();
+
 }
 
 
@@ -389,6 +401,7 @@ void MainWindow::onServerChangeState()
         sshCommand->stopServer();
     }
 }
+
 
 
 

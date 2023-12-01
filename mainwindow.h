@@ -31,6 +31,7 @@
 #include "./src/QCrioViewWidget.h"
 
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -74,6 +75,7 @@ private:
     int              currentModuleIndex;
 
 
+
     QIniTreeWidget  *iniTreeWidget;
 
 
@@ -111,6 +113,10 @@ private slots:
     //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
     void  onModuleIniFileDownloaded(const QString &output      , const QString &lastCommand);
 
+    //this slot is triggered when sshCommand get the response to a "downloadModbusSetup" query though this command in ssh. bat
+    //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
+    void onModubusParamFileDownloaded(const QString &output    , const QString &lastCommand);
+
     //this slot is triggered when sshCommand command get the response to a "downloadModule" module query though this command in ssh. bat
     //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
     void  onServerGetState         (const bool    &isRunning   , const QString &lastCommand);
@@ -134,6 +140,7 @@ private slots:
 
     void  onModuleItemDoubleClicked(const QModelIndex &index);
     void  onServerChangeState      ();
+
 
 };
 #endif // MAINWINDOW_H
