@@ -1,5 +1,11 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include <QProgressBar>
+#include <QMessageBox>
+#include <QListView>
+#include <QPushButton>
+#include <QLabel>
+#include <QTabWidget>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -96,8 +102,9 @@ QWidget *MainWindow::createCrioViewTab()
     setupCurrentReader();
     setupVoltageReader();
     //this to show the inifile in a specialized widget if we double click an item
-    connect(crioViewTab->modulesListView(), &QListView::doubleClicked, this, &MainWindow::onModuleItemDoubleClicked, Qt::QueuedConnection);
-    connect (crioViewTab, &QCrioViewWidget::sshConnectionAskedSignal,this,&MainWindow::handleConnection,Qt::QueuedConnection);
+    connect(crioViewTab->modulesListView(), &QListView::doubleClicked , this , &MainWindow::onModuleItemDoubleClicked, Qt::QueuedConnection);
+    connect (crioViewTab, &QCrioViewWidget::sshConnectionAskedSignal  , this , &MainWindow::handleConnection,Qt::QueuedConnection);
+    connect (crioViewTab, &QCrioViewWidget::serverChangeStateSignal   , this , &MainWindow::onServerChangeState, Qt::QueuedConnection);
     return crioViewTab;
 
 }
@@ -292,6 +299,9 @@ void MainWindow::onModubusParamFileDownloaded(const QString &output, const QStri
     crioViewTab->terminalOutput()->addLastOutput(output);
     modbusSetupViewer->setFileName(iniModbusSetupPath+"modbus.ini");
     modbusSetupViewer->loadFromFile();
+    modbusSetupViewer->setHost(crioViewTab->ipEdit()->ipAddress());
+    modbusSetupViewer->setPort(commandPort);
+    modbusSetupViewer->connectToServer();
 
 }
 
@@ -389,10 +399,10 @@ void MainWindow::onCommanServerLogError(const QString &error)
     crioViewTab->terminalOutput()->addLastError(error);
 }
 
-void MainWindow::onServerChangeState()
+void MainWindow::onServerChangeState(bool isOn)
 {
 
-    if (crioViewTab->startStopServerSwitchButton()->getState())
+    if (isOn)
     {
         sshCommand->startServer();
     }

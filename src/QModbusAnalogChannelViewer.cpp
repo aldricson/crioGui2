@@ -34,3 +34,16 @@ void QModbusAnalogChannelViewer::paintEvent(QPaintEvent *event) {
     painter.setPen(QPen(Qt::blue, 1)); // Blue pen with 1px width
     painter.drawRect(0, 0, width() - 1, height() - 1); // Draw a rectangle border
 }
+
+QLabel *QModbusAnalogChannelViewer::getChannelLabel() const
+{
+    return channelLabel;
+}
+
+void QModbusAnalogChannelViewer::setChannelLabel(QLabel *newChannelLabel)
+{
+    if (channelLabel == newChannelLabel)
+        return;
+    channelLabel = newChannelLabel;
+    emit channelLabelChanged();
+}

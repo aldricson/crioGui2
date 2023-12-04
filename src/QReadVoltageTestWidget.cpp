@@ -4,6 +4,7 @@
 QReadVoltageTestWidget::QReadVoltageTestWidget( QWidget *parent)
     : QBaseAnalogReaderTestWidget( "Read Voltage Test", parent)
 {
+    this->setObjectName("Voltage reader");
     // Additional setup specific to QReadCurrentTestWidget if needed
     bindTCPClient();
     m_truthOScope->setVerticalScale(-10.0, 10.0);

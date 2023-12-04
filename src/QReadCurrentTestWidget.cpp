@@ -4,6 +4,7 @@ QReadCurrentTestWidget::QReadCurrentTestWidget( QWidget *parent)
     : QBaseAnalogReaderTestWidget("Read Current Test", parent)
 {
     // Additional setup specific to QReadCurrentTestWidget if needed
+    this->setObjectName("Current reader");
     bindTCPClient();
     m_truthOScope->setVerticalScale(0.0, 0.005);
     m_truthOScope->setHorizontalMaxSamples(60);

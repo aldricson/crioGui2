@@ -43,3 +43,14 @@ QModbusAnalogViewer::QModbusAnalogViewer(QWidget *parent)
     mainLayout->addWidget(tabWidget);
     setLayout(mainLayout);
 }
+
+void QModbusAnalogViewer::resetOffset(int offSet)
+{
+    for (int i = 0; i < 128; ++i) {
+        channelViewers[i]->getChannelLabel()->setText(QString("Channel: %1").arg(i + offSet));
+    }
+
+    // Update the titles of the tabs
+    tabWidget->setTabText(0, QString("Channels %1 to %2").arg(offSet).arg(offSet + 63));
+    tabWidget->setTabText(1, QString("Channels %1 to %2").arg(offSet + 64).arg(offSet + 127));
+}

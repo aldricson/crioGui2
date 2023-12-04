@@ -106,7 +106,7 @@ target_include_directories(${THISPROJECT} PUBLIC ${QXLSX_HEADERS_DIRECTORY})
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Charts REQUIRED)
-
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS SerialBus)
 
 
 target_link_libraries(${THISPROJECT} PRIVATE Qt${QT_VERSION_MAJOR}::Core
@@ -114,7 +114,8 @@ target_link_libraries(${THISPROJECT} PRIVATE Qt${QT_VERSION_MAJOR}::Core
                                              Qt${QT_VERSION_MAJOR}::Widgets
                                              Qt${QT_VERSION_MAJOR}::Network
                                              Qt${QT_VERSION_MAJOR}::Concurrent
-                                             Qt${QT_VERSION_MAJOR}::Charts)
+                                             Qt${QT_VERSION_MAJOR}::Charts
+                                             Qt${QT_VERSION_MAJOR}::SerialBus)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC QXlsxQt6)
 

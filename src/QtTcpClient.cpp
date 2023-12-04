@@ -1,7 +1,6 @@
 #include "QtTcpClient.h"
 #include <QDebug>
 
-
 /**
  * @brief Constructor for the QtTcpClient class.
  *
@@ -17,8 +16,7 @@
 QtTcpClient::QtTcpClient(QObject *parent) : QObject(parent), socket(new QTcpSocket(this)) {
     connect(socket, &QTcpSocket::connected, this, &QtTcpClient::onConnected);
     connect(socket, &QTcpSocket::readyRead, this, &QtTcpClient::onDataReceived);
-    connect(socket, &QTcpSocket::errorOccurred, this, &QtTcpClient::displayError);
-
+    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred), this, &QtTcpClient::displayError);
 }
 
 /**
@@ -30,9 +28,34 @@ QtTcpClient::QtTcpClient(QObject *parent) : QObject(parent), socket(new QTcpSock
  * @details
  * - Initiates a connection to the server using the QTcpSocket.
  */
-void QtTcpClient::connectToServer(const QString &host, quint16 port)
+void QtTcpClient::connectToServer(const QString &host, quint16 port,const QString &message)
 {
+    qInfo()<<message;
     socket->connectToHost(host, port);
+}
+
+/**
+ * @brief Connects to a TCP server at the specified host and port.
+ *
+ * @param host The hostname or IP address of the server.
+ * @param port The port number to connect to.
+ *
+ * @return True if the connection is successful, otherwise False.
+ *
+ * @details
+ * - Initiates a connection to the server using the QTcpSocket.
+ * - Returns true if the connection is successful, otherwise returns false.
+ */
+bool QtTcpClient::checkConnect(const QString &host, quint16 port)
+{
+    if (socket->state() != QAbstractSocket::ConnectedState)
+    {
+        setHost(host);
+        setPort(port);
+        socket->connectToHost(m_host, m_port);
+        return socket->waitForConnected(); // Returns true if connected successfully.
+    }
+    return true; // Already connected.
 }
 
 /**
@@ -41,18 +64,25 @@ void QtTcpClient::connectToServer(const QString &host, quint16 port)
  * @param moduleAlias Alias or name of the module to read from.
  * @param channelIndex Index of the channel on the module.
  *
+ * @return True if the request is sent successfully, otherwise False.
+ *
  * @details
  * - Constructs a request string in the format "readCurrent;<moduleAlias>;<channelIndex>;".
  * - If the socket is connected, the request is sent to the server.
  * - The last request type is recorded as "readCurrent".
+ * - Returns true if the request is sent successfully, otherwise returns false.
  */
 void QtTcpClient::sendReadCurrentRequest(const QString &moduleAlias, unsigned int channelIndex)
 {
-    if (socket->state() == QAbstractSocket::ConnectedState)
-    {
+    if (checkConnect(m_host, m_port)) {
         QString request = QString("readCurrent;%1;%2;").arg(moduleAlias).arg(channelIndex);
         m_lastRequest = "readCurrent";
         socket->write(request.toUtf8());
+        socket->waitForBytesWritten(); // Returns true if the request is sent successfully.
+    }
+    else
+    {
+        emit socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
@@ -62,21 +92,95 @@ void QtTcpClient::sendReadCurrentRequest(const QString &moduleAlias, unsigned in
  * @param moduleAlias Alias or name of the module to read from.
  * @param channelIndex Index of the channel on the module.
  *
+ * @return True if the request is sent successfully, otherwise False.
+ *
  * @details
  * - Constructs a request string in the format "readVoltage;<moduleAlias>;<channelIndex>;".
  * - If the socket is connected, the request is sent to the server.
  * - The last request type is recorded as "readVoltage".
+ * - Returns true if the request is sent successfully, otherwise returns false.
  */
 void QtTcpClient::sendReadVoltageRequest(const QString &moduleAlias, unsigned int channelIndex)
 {
-    if (socket->state() == QAbstractSocket::ConnectedState)
+    if (checkConnect(m_host, m_port))
     {
         QString request = QString("readVoltage;%1;%2;").arg(moduleAlias).arg(channelIndex);
         m_lastRequest = "readVoltage";
         socket->write(request.toUtf8());
+        socket->waitForBytesWritten();
+    }
+    else
+    {
+        emit socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
+/**
+ * @brief Sends a request to start Modbus simulation.
+ *
+ * @return True if the request is sent successfully, otherwise False.
+ *
+ * @details
+ * - Constructs a request string "startModbusSimulation".
+ * - If the socket is connected, the request is sent to the server.
+ * - The last request type is recorded as "startModbusSimulation".
+ * - Returns true if the request is sent successfully, otherwise returns false.
+ */
+void QtTcpClient::sendStartModbusSimulation()
+{
+    if (checkConnect(m_host, m_port))
+    {
+        QString request = "startModbusSimulation";
+        m_lastRequest = request;
+        socket->write(request.toUtf8());
+        socket->waitForBytesWritten();
+    }
+    else
+    {
+        emit socketNotConnectedSignal("NACK: socket not connected");
+    }
+}
+
+void QtTcpClient::sendStopSimulation()
+{
+    if (checkConnect(m_host, m_port))
+    {
+        QString request = "stopModbusSimulation";
+        m_lastRequest = request;
+        socket->write(request.toUtf8());
+        socket->waitForBytesWritten();
+    }
+    else
+    {
+        emit socketNotConnectedSignal("NACK: socket not connected");
+    }
+}
+
+const QString &QtTcpClient::host() const
+{
+    return m_host;
+}
+
+void QtTcpClient::setHost(const QString &newHost)
+{
+    if (m_host == newHost)
+        return;
+    m_host = newHost;
+    emit hostChanged();
+}
+
+quint16 QtTcpClient::port() const
+{
+    return m_port;
+}
+
+void QtTcpClient::setPort(quint16 newPort)
+{
+    if (m_port == newPort)
+        return;
+    m_port = newPort;
+    emit portChanged();
+}
 
 /**
  * @brief Slot triggered when the socket is successfully connected to the server.
@@ -89,7 +193,6 @@ void QtTcpClient::onConnected()
     qDebug() << "Connected to server";
     //TODO
 }
-
 
 /**
  * @brief Slot triggered when data is received from the server.
@@ -116,8 +219,17 @@ void QtTcpClient::onDataReceived()
     {
        emit voltageReadedSignal(response);
     }
+    else if (m_lastRequest == "startModbusSimulation")
+    {
+        emit simulationStartedSignal(response);
+    }
+    else if (m_lastRequest == "stopModbusSimulation")
+    {
+        emit simulationStopedSignal(response);
+    }
 
-    qDebug() << "Response from server:" << response;
+
+    qDebug() << "Response to " << m_lastRequest<< "from server:" << response;
 }
 
 /**

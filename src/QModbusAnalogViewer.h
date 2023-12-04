@@ -13,6 +13,7 @@ class QModbusAnalogViewer : public QWidget
 
 public:
     explicit QModbusAnalogViewer(QWidget *parent = nullptr);
+    void resetOffset(int offSet);
 
 private:
     QVector<QModbusAnalogChannelViewer*> channelViewers;

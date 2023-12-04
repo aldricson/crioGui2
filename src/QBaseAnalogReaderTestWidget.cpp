@@ -101,6 +101,6 @@ void QBaseAnalogReaderTestWidget::setPort(quint16 newPort)
 
 void QBaseAnalogReaderTestWidget::tcpConnect()
 {
-    m_client->connectToServer(m_host,m_port);
+    m_client->connectToServer(m_host,m_port,this->objectName());
 }
 

@@ -2,20 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QTabWidget>
 #include <QGridLayout>
-#include <QLabel>
 #include <QAction>
-#include <QPushButton>
 #include <QDebug>
 #include <QFile>
 #include <QStringList>
 #include <QStringListModel>
 #include <QRegularExpression>
-#include <QListView>
+
 #include <QDir>
-#include <QProgressBar>
-#include <QMessageBox>
+
 #include <algorithm>
 #include "./src/QIpAddressEditor.h"
 #include "./src/QSSHCommand.h"
@@ -30,7 +26,12 @@
 #include "./src/QModbusSetupViewer.h"
 #include "./src/QCrioViewWidget.h"
 
-
+class QProgressBar;
+class QMessageBox ;
+class QListView   ;
+class QPushButton ;
+class QLabel      ;
+class QTabWidget  ;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -139,7 +140,7 @@ private slots:
 
 
     void  onModuleItemDoubleClicked(const QModelIndex &index);
-    void  onServerChangeState      ();
+    void  onServerChangeState      (bool isOn);
 
 
 };
