@@ -5,25 +5,31 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QTimer>
 #include "QtTcpClient.h"
 #include "QMultiLineTextVisualizer.h"
 #include "QModbusAnalogViewer.h"
+#include "QBetterSwitchButton.h"
+#include "QModbusCrioClient.h"
 
 
 QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     : QWidget(parent)
 {
-    m_modbusClient = new QModbusCrioClient(this);
-    m_tcpClient    = new QtTcpClient(this);
+    //the class in charge of retriving datas from the crio modbus
+    m_modbusClient   = new QModbusCrioClient(this);
+    connect(m_modbusClient, &QModbusCrioClient::analogsDataReady, this, &QModbusSetupViewer::OnAnalogsDataReady, Qt::QueuedConnection);
+    //modbus poller when the modbus is in simulation mode
+    createSimulTimer();
+    //to request the command server
+    createTCPClient();
+    //to visualize client server exchanges in human readable format
     m_comControl   = new QMultiLineTextVisualizer(this);
-    connect (m_tcpClient, &QtTcpClient::simulationStartedSignal, this, &QModbusSetupViewer::onSimulationStarted , Qt::QueuedConnection);
-    connect (m_tcpClient, &QtTcpClient::simulationStopedSignal , this, &QModbusSetupViewer::onSimulationStoped  , Qt::QueuedConnection);
+    //to visualize crio debug outputs
+    m_debugOutput  = new QMultiLineTextVisualizer(this);
     // Create GroupBoxes for different sections
-    m_containerGroupBox          = new QGroupBox("Modbus Setup"         , this               );
-    m_compatibilityLayerGroupBox = new QGroupBox("Exlog Compatibility"  , m_containerGroupBox);
-    m_modbusCapacitiesGroupBox   = new QGroupBox("Modbus Capacities"    , m_containerGroupBox); // Corrected the name to match its purpose
-    m_networkGroupBox            = new QGroupBox("Network Configuration", m_containerGroupBox); // Changed name to avoid confusion with Modbus Capacities
-
+    m_containerGroupBox          = new QGroupBox("Modbus Setup",this);
+    createSectionGroupBoxes(m_containerGroupBox);
     // Create QLineEdit widgets for the m_modbusCapacitiesGroupBox
     coilsLineEdit            = new QLineEdit(m_modbusCapacitiesGroupBox);
     discreteInputsLineEdit   = new QLineEdit(m_modbusCapacitiesGroupBox);
@@ -39,17 +45,8 @@ QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     nbAnalogsInLineEdit      = new QLineEdit(m_compatibilityLayerGroupBox);
     nbAnalogsOutLineEdit     = new QLineEdit(m_compatibilityLayerGroupBox);
     nbCountersLineEdit       = new QLineEdit(m_compatibilityLayerGroupBox);
-
     // Create buttons for actions
-    reloadButton = new QPushButton ("(Re)load", m_containerGroupBox);
-    saveButton = new QPushButton   ("Save"    , m_containerGroupBox);
-    uploadButton = new QPushButton ("Upload"  , m_containerGroupBox);
-
-    // Connect buttons to slots
-    connect(reloadButton, &QPushButton::clicked, this, &QModbusSetupViewer::loadFromFile);
-    connect(saveButton  , &QPushButton::clicked, this, &QModbusSetupViewer::saveToFile);
-    connect(uploadButton, &QPushButton::clicked, this, &QModbusSetupViewer::uploadToServer);
-
+    createLoadSaveUploadButtons(m_containerGroupBox);
     // Create a form layout for the m_modbusCapacitiesGroupBox
     QFormLayout *modbusCapacitiesLayout = new QFormLayout(m_modbusCapacitiesGroupBox);
     modbusCapacitiesLayout->addRow("Coils Max:", coilsLineEdit);
@@ -89,21 +86,15 @@ QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     m_containerGroupBox->setLayout(mainLayout);
 
     m_analogsViewer = new QModbusAnalogViewer(this);
-    // Create a layout for this widget and add the m_containerGroupBox to it
-    QGridLayout *thisLayout = new QGridLayout(this);
+
     startStopModbusSwitch     = new QBetterSwitchButton("stop ", "start", QColor(0xEE4B2B), QColor(0x6495ED), Qt::green, false, this);
     simulateAcquisitionSwitch = new QBetterSwitchButton("simulate", " mapped ", QColor(0xEE4B2B), QColor(0x6495ED), Qt::green, false, this);
-
-    thisLayout->addWidget(startStopModbusSwitch ,0,0,1,1);
-    thisLayout->addWidget(startStopModbusSwitch ,0,1,1,1);
-    thisLayout->addWidget(m_containerGroupBox   ,1,0,1,1);
-    thisLayout->addWidget(m_analogsViewer       ,1,1,1,1);
-    thisLayout->addWidget(m_comControl          ,2,0,1,1);
-    setLayout(thisLayout);
 
     connect(compatibilityLayerSwitch  , &QBetterSwitchButton::stateChanged , this, &QModbusSetupViewer::onExlogCompatibilityChanged, Qt::QueuedConnection);
     connect(startStopModbusSwitch     , &QBetterSwitchButton::stateChanged , this, &QModbusSetupViewer::onStartStopModbusChanged   , Qt::QueuedConnection);
     connect(simulateAcquisitionSwitch , &QBetterSwitchButton::stateChanged , this, &QModbusSetupViewer::onModbusSimulationOrAcquisitionChanged, Qt::QueuedConnection);
+    setUpLayout();
+
 }
 
 
@@ -261,10 +252,18 @@ void QModbusSetupViewer::onSimulationStarted(const QString &response)
 {
     if (response.contains("ACK"))
     {
+        m_modbusClient->setIp(m_host);
+        m_modbusClient->setPort(502);
+        m_nbAnalogics = nbAnalogsInLineEdit->text().toInt();
+        compatibilityLayerSwitch->getState() ? m_exlogOffset = 1 : m_exlogOffset = 0;
         m_comControl->addLastOutput("Modbus server simulation on");
+        m_modbusSimTimer->start();
+        m_modbusReading = true;
     }
     else if (response.contains("NACK"))
     {
+        m_modbusReading = false;
+        m_modbusSimTimer->stop();
         m_comControl->addLastError("Somthing gone wrong when trying to stop simulation:\n"+response);
     }
 }
@@ -273,14 +272,44 @@ void QModbusSetupViewer::onSimulationStoped(const QString &response)
 {
     if (response.contains("ACK"))
     {
+        m_modbusReading = false;
+        m_modbusSimTimer->stop();
         m_comControl->addLastOutput("Modbus server simulation off");
     }
     else if (response.contains("NACK"))
     {
+        m_modbusReading = false;
+        m_modbusSimTimer->stop();
         m_comControl->addLastError("Somthing gone wrong when trying to stop simulation:\n"+response);
     }
     simulateAcquisitionSwitch->setEnabled(true);
     simulateAcquisitionSwitch->update();
+}
+
+void QModbusSetupViewer::onSimulTimer()
+{
+    m_modbusSimTimer->stop(); //avoid reentry
+    m_modbusClient->readAnalogics(m_exlogOffset,m_nbAnalogics);
+}
+
+void QModbusSetupViewer::OnAnalogsDataReady(const QVector<quint16> &data)
+{
+    qInfo()<<data;
+    //authorize a new entry
+    if (m_modbusReading) m_modbusSimTimer->start();
+}
+
+QMultiLineTextVisualizer *QModbusSetupViewer::debugOutput() const
+{
+    return m_debugOutput;
+}
+
+void QModbusSetupViewer::setDebugOutput(QMultiLineTextVisualizer *newDebugOutput)
+{
+    if (m_debugOutput == newDebugOutput)
+        return;
+    m_debugOutput = newDebugOutput;
+    emit debugOutputChanged();
 }
 
 quint16 QModbusSetupViewer::port() const
@@ -314,7 +343,7 @@ void QModbusSetupViewer::setHost(const QString &newHost)
 
 void QModbusSetupViewer::blockAllSignals(const bool &blocked)
 {
-    m_containerGroupBox                   -> blockSignals(blocked);
+    m_containerGroupBox        -> blockSignals(blocked);
     coilsLineEdit              -> blockSignals(blocked);
     discreteInputsLineEdit     -> blockSignals(blocked);
     holdingRegistersLineEdit   -> blockSignals(blocked);
@@ -369,5 +398,52 @@ void QModbusSetupViewer::setAllValidators()
     listeningPortLineEdit->setValidator(portValidator);
 
 
+}
+
+void QModbusSetupViewer::createTCPClient()
+{
+    m_tcpClient    = new QtTcpClient(this);
+    connect (m_tcpClient, &QtTcpClient::simulationStartedSignal, this, &QModbusSetupViewer::onSimulationStarted , Qt::QueuedConnection);
+    connect (m_tcpClient, &QtTcpClient::simulationStopedSignal , this, &QModbusSetupViewer::onSimulationStoped  , Qt::QueuedConnection);
+}
+
+void QModbusSetupViewer::createSectionGroupBoxes(QGroupBox *parentGroupBox)
+{
+    m_compatibilityLayerGroupBox = new QGroupBox("Exlog Compatibility"  , parentGroupBox);
+    m_modbusCapacitiesGroupBox   = new QGroupBox("Modbus Capacities"    , parentGroupBox); // Corrected the name to match its purpose
+    m_networkGroupBox            = new QGroupBox("Network Configuration", parentGroupBox);
+}
+
+
+void QModbusSetupViewer::createLoadSaveUploadButtons(QGroupBox *parentGroupBox)
+{
+    // Create buttons for actions
+    reloadButton = new QPushButton ("(Re)load", parentGroupBox);
+    saveButton   = new QPushButton ("Save"    , parentGroupBox);
+    uploadButton = new QPushButton ("Upload"  , parentGroupBox);
+    // Connect buttons to slots
+    connect(reloadButton, &QPushButton::clicked, this, &QModbusSetupViewer::loadFromFile  , Qt::QueuedConnection);
+    connect(saveButton  , &QPushButton::clicked, this, &QModbusSetupViewer::saveToFile    , Qt::QueuedConnection);
+    connect(uploadButton, &QPushButton::clicked, this, &QModbusSetupViewer::uploadToServer, Qt::QueuedConnection);
+}
+
+void QModbusSetupViewer::createSimulTimer()
+{
+    m_modbusSimTimer = new QTimer(this);
+    m_modbusSimTimer->setInterval(1000);//1 sec acquisition time
+    connect (m_modbusSimTimer, &QTimer::timeout, this,&QModbusSetupViewer::onSimulTimer);
+}
+
+void QModbusSetupViewer::setUpLayout()
+{
+    // Create a layout for this widget and add the m_containerGroupBox to it
+    QGridLayout *thisLayout = new QGridLayout(this);
+    thisLayout->addWidget(startStopModbusSwitch ,0,0,1,1);
+    thisLayout->addWidget(startStopModbusSwitch ,0,1,1,1);
+    thisLayout->addWidget(m_containerGroupBox   ,1,0,1,1);
+    thisLayout->addWidget(m_analogsViewer       ,1,1,1,1);
+    thisLayout->addWidget(m_comControl          ,2,0,1,1);
+    thisLayout->addWidget(m_debugOutput         ,2,1,1,1);
+    setLayout(thisLayout);
 }
 

@@ -24,7 +24,7 @@ if "%COMMAND%" == "getModuleList" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "cd /home/dataDrill; sh dataDrillStart.sh"
 ) else if "%COMMAND%" == "stopServer" (
     :: Use plink to stop the server on the remote machine
-    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "pkill dataDrill"
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "pkill -f dataDrill"
 ) else if "%COMMAND%" == "downloadModule" (
     :: Use pscp to download a file from the remote machine to the local machine
     :: %PARAMETER1% is the full path of the source file on the remote machine
@@ -35,4 +35,7 @@ if "%COMMAND%" == "getModuleList" (
     :: %PARAMETER1% is the full path of the source file on the remote machine
     :: %PARAMETER2% is the full path for the file on the local machine
     pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
+) else if "%COMMAND%" == "getInterfacesIPv4" (
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "ip addr show | grep inet | grep -v inet6 | awk '{print $2}' | cut -d'/' -f1"
 )
+

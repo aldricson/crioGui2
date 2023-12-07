@@ -6,6 +6,8 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QTabWidget>
+#include "./src/QIpAddressEditor.h"
+#include "./src/QTCPDebugClient.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -14,7 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
     iniModbusSetupPath  = QCoreApplication::applicationDirPath()+"/"+"modbus"+"/";
-    moduleExtractor         = new QCrioModulesDataExtractor(this);
+    moduleExtractor     = new QCrioModulesDataExtractor(this);
+    m_crioDebugger      = new QTCPDebugClient(this);
+    connect (m_crioDebugger, &QTCPDebugClient::debugMessageReceived, this, &MainWindow::onCrioDebugMessage, Qt::QueuedConnection);
 
     ui->setupUi(this);
     tabWidget = new QTabWidget(this);
@@ -371,6 +375,7 @@ void MainWindow::onServerStoped(const QString &lastCommand)
 
 void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString &lastCommand)
 {
+    m_crioDebugger->connectToDebugServer(crioViewTab->ipEdit()->ipAddress(),commandPort+1);
     // the server has started succesfully
     //keep track of the last command
     lastSshCommand =  lastCommand;
@@ -397,6 +402,18 @@ void MainWindow::onCommandServerLogResponse(const QString &response)
 void MainWindow::onCommanServerLogError(const QString &error)
 {
     crioViewTab->terminalOutput()->addLastError(error);
+}
+
+void MainWindow::onCrioDebugMessage(const QString &message)
+{
+    if (crioViewTab)
+    {
+        crioViewTab->crioUDPDebugOutput()->addLastOutput(message);
+    }
+    if (modbusSetupViewer)
+    {
+        modbusSetupViewer->debugOutput()->addLastOutput(message);
+    }
 }
 
 void MainWindow::onServerChangeState(bool isOn)

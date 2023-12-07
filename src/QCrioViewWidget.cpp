@@ -337,6 +337,17 @@ void QCrioViewWidget::onUpdateControlsInReactionOfaStopFailure()
     m_voltageTestWidget->setEnabled(false);
 }
 
+QMultiLineTextVisualizer *QCrioViewWidget::crioUDPDebugOutput() const
+{
+    return m_crioUDPDebugOutput;
+}
+
+void QCrioViewWidget::setCrioUDPDebugOutput(QMultiLineTextVisualizer *newCrioUDPDebugOutput)
+{
+    m_crioUDPDebugOutput = newCrioUDPDebugOutput;
+    emit crioUDPDebugOutputChanged();
+}
+
 
 
 void QCrioViewWidget::setupUi()
@@ -372,9 +383,10 @@ void QCrioViewWidget::setupUi()
     m_startStopServerSwitchButton = new QBetterSwitchButton(" stopped ", " active ", QColor(0xf54444), QColor(0x449ef5), QColor(0x44f547), false, this);
     m_startStopServerSwitchButton->setEnabled(false);
 
-    m_currentTestWidget = new QReadCurrentTestWidget(this);
-    m_voltageTestWidget = new QReadVoltageTestWidget(this);
-    m_terminalOutput = new QMultiLineTextVisualizer(this);
+    m_currentTestWidget   = new QReadCurrentTestWidget  (this);
+    m_voltageTestWidget   = new QReadVoltageTestWidget  (this);
+    m_terminalOutput      = new QMultiLineTextVisualizer(this);
+    m_crioUDPDebugOutput  = new QMultiLineTextVisualizer(this);
 
     // Add widgets to the layout
     layout->addWidget(m_ipLabel                     , 0,0,1,1,Qt::AlignHCenter);
@@ -397,7 +409,9 @@ void QCrioViewWidget::setupUi()
     layout->addWidget(m_voltageTestWidget           , 3,2,1,1);
 
 
-    layout->addWidget(m_terminalOutput              , 5,0,1,5);
+    layout->addWidget(m_terminalOutput              , 5,0,1,2);
+    layout->addWidget(m_crioUDPDebugOutput          , 5,2,1,3);
+
 
     this->setLayout(layout);
 }

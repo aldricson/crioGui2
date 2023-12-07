@@ -35,4 +35,5 @@ void QMultiLineTextVisualizer::clearText() {
 void QMultiLineTextVisualizer::appendTextWithColor(const QString &text, const QColor &color) {
     QString coloredText = QString("<span style=\"color:%1;\">%2</span>").arg(color.name(), text);
     append(coloredText);
+    append("");
 }

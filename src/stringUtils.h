@@ -258,7 +258,8 @@ static inline std::string concatenateRow(const std::vector<std::string>& row) {
 }
 
 
-static inline unsigned int strToUnsignedInt(const std::string& str, bool& ok) {
+static inline unsigned int strToUnsignedInt(const std::string& str, bool& ok)
+{
     try {
         unsigned long ul = std::stoul(str);
         if (ul <= std::numeric_limits<unsigned int>::max()) {

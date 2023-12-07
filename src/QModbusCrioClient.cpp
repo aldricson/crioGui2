@@ -37,13 +37,15 @@ void QModbusCrioClient::setPort(int port) {
 }
 
 void QModbusCrioClient::readAnalogics(int registerStartIndex, int nbRegistersToRead) {
-    if (!m_modbusClient->connectDevice()) {
+    if (!m_modbusClient->connectDevice())
+    {
+        qInfo()<<"connection failed";
         handleError("Connection failed");
         return;
     }
-
+    qInfo()<<"connection success";
     QModbusDataUnit readUnit(QModbusDataUnit::InputRegisters, registerStartIndex, nbRegistersToRead);
-    QModbusReply *reply = m_modbusClient->sendReadRequest(readUnit, 1); // Unit ID is set to 1
+    QModbusReply *reply = m_modbusClient->sendReadRequest(readUnit, 0); // Unit ID is set to 1
 
     if (reply) {
         if (!reply->isFinished()) {

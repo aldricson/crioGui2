@@ -13,7 +13,6 @@
 #include <QDir>
 
 #include <algorithm>
-#include "./src/QIpAddressEditor.h"
 #include "./src/QSSHCommand.h"
 #include "./src/QIniTreeWidget.h"
 #include "./src/QtTcpClient.h"
@@ -26,12 +25,14 @@
 #include "./src/QModbusSetupViewer.h"
 #include "./src/QCrioViewWidget.h"
 
-class QProgressBar;
-class QMessageBox ;
-class QListView   ;
-class QPushButton ;
-class QLabel      ;
-class QTabWidget  ;
+class QProgressBar     ;
+class QMessageBox      ;
+class QListView        ;
+class QPushButton      ;
+class QLabel           ;
+class QTabWidget       ;
+class QIpAddressEditor ;
+class QTCPDebugClient  ;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -50,6 +51,8 @@ private:
     //visual placing objects
     Ui::MainWindow            *ui              ;
     QVBoxLayout               *mainLayout      = nullptr;
+    //this class is in charge to intercept crio udp debug datagrams
+    QTCPDebugClient           *m_crioDebugger  = nullptr;
     QTabWidget                *tabWidget       = nullptr;
     //this class is in charge to extract modules information from ini files
     QCrioModulesDataExtractor *moduleExtractor = nullptr;
@@ -136,6 +139,8 @@ private slots:
     void onCommandServerLogRequest  (const QString &request);
     void onCommandServerLogResponse (const QString &response);
     void onCommanServerLogError     (const QString &error);
+    //triggered by the udp listener when the crio send a dbug udp packet
+    void onCrioDebugMessage (const QString &message);
 
 
 

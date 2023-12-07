@@ -41,6 +41,7 @@ class QCrioViewWidget : public QWidget
     Q_PROPERTY(QListView *modulesListView READ modulesListView WRITE setModulesListView NOTIFY modulesListViewChanged)
     Q_PROPERTY(QLabel *moduleListLabel READ moduleListLabel WRITE setModuleListLabel NOTIFY moduleListLabelChanged)
     Q_PROPERTY(QStringListModel *moduleListModel READ moduleListModel WRITE setModuleListModel NOTIFY moduleListModelChanged)
+    Q_PROPERTY(QMultiLineTextVisualizer *crioUDPDebugOutput READ crioUDPDebugOutput WRITE setCrioUDPDebugOutput NOTIFY crioUDPDebugOutputChanged)
 
 public:
     explicit QCrioViewWidget(QWidget *parent = nullptr);
@@ -95,6 +96,9 @@ public:
     QStringListModel *moduleListModel() const;
     void setModuleListModel(QStringListModel *newModuleListModel);
 
+    QMultiLineTextVisualizer *crioUDPDebugOutput() const;
+    void setCrioUDPDebugOutput(QMultiLineTextVisualizer *newCrioUDPDebugOutput);
+
 public slots:
     //mainly used to update the interface
     void onServerStartSuccesfull       (const int &screenSession , const QString &lastCommand);
@@ -119,6 +123,7 @@ private:
     QLabel                   *m_serverStateLabel            = nullptr;
     QBetterSwitchButton      *m_startStopServerSwitchButton = nullptr;
     QMultiLineTextVisualizer *m_terminalOutput              = nullptr;
+    QMultiLineTextVisualizer *m_crioUDPDebugOutput          = nullptr;
     QReadCurrentTestWidget   *m_currentTestWidget           = nullptr;
     QReadVoltageTestWidget   *m_voltageTestWidget           = nullptr;
     QStringListModel         *m_moduleListModel             = nullptr;
@@ -128,6 +133,7 @@ private:
 
     void setupUi();
     void setupConnections();
+
 
 
 
@@ -152,6 +158,8 @@ signals:
     void modulesListViewChanged                   ();
     void moduleListLabelChanged                   ();
     void moduleListModelChanged                   ();
+
+    void crioUDPDebugOutputChanged();
 
 private slots:
     void handleConnection();

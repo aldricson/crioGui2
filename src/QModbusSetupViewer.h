@@ -3,17 +3,15 @@
 
 #include <QWidget>
 #include <QSettings>
-
-
 #include <QIntValidator>
 #include <QRegularExpressionValidator>
 #include <QRegularExpression>
-
-#include "QBetterSwitchButton.h"
 #include "stringUtils.h"
 #include "QIpAddressEditor.h"
-#include "QModbusCrioClient.h"
 
+
+//Forward declarations may speed up compilation time a bit
+//so the includes are now in cpp file
 class QLineEdit;
 class QSpinBox;
 class QPushButton;
@@ -22,6 +20,9 @@ class QMessageBox;
 class QtTcpClient;
 class QModbusAnalogViewer;
 class QMultiLineTextVisualizer;
+class QBetterSwitchButton;
+class QModbusCrioClient;
+class QTimer;
 
 class QModbusSetupViewer : public QWidget
 {
@@ -45,17 +46,22 @@ public:
 
     void connectToServer();
 
+    QMultiLineTextVisualizer *debugOutput() const;
+    void setDebugOutput(QMultiLineTextVisualizer *newDebugOutput);
+
 public slots:
     void loadFromFile();
     void saveToFile();
     void uploadToServer();
 
 private slots:
-    void onExlogCompatibilityChanged();
-    void onModbusSimulationOrAcquisitionChanged();
-    void onStartStopModbusChanged();
-    void onSimulationStarted(const QString &response);
-    void onSimulationStoped(const QString &response);
+    void onExlogCompatibilityChanged              ()                                ;
+    void onModbusSimulationOrAcquisitionChanged   ()                                ;
+    void onStartStopModbusChanged                 ()                                ;
+    void onSimulationStarted                      (const QString          &response);
+    void onSimulationStoped                       (const QString          &response);
+    void onSimulTimer                             ()                                ;
+    void OnAnalogsDataReady                       (const QVector<quint16> &data    );
 
 signals:
     void fileNameChanged();
@@ -63,6 +69,8 @@ signals:
     void hostChanged();
 
     void portChanged();
+
+    void debugOutputChanged();
 
 private:
     QSettings *settings                    = nullptr;
@@ -90,16 +98,25 @@ private:
     QModbusCrioClient          *m_modbusClient               = nullptr;
     QtTcpClient                *m_tcpClient                  = nullptr;
     QMultiLineTextVisualizer   *m_comControl                 = nullptr;
-    QString                    m_host;
-    quint16                    m_port;
+    QMultiLineTextVisualizer   *m_debugOutput                = nullptr;
+    QTimer                     *m_modbusSimTimer             = nullptr;
+    QString                    m_host                                 ;
+    quint16                    m_port                                 ;
+    int                        m_nbAnalogics                 = 0      ;
+    QString                    m_fileName                             ;
+    int                        m_exlogOffset                 = 0      ;
+    bool                       m_isSimul                     = true   ;
+    bool                       m_modbusReading               = false  ;
 
-    QString m_fileName;
-    int m_exlogOffset = 0;
-    bool m_isSimul = true;
+    void blockAllSignals            (const bool &blocked             );
+    void setAllValidators           ()                                ;
+    void createTCPClient            ()                                ;
+    void createSectionGroupBoxes    (QGroupBox *parentGroupBox)       ;
+    void createLoadSaveUploadButtons(QGroupBox *parentGroupBox )      ;
+    void createSimulTimer           ()                                ;
+    void setUpLayout                ()                                ;
 
-    void blockAllSignals(const bool &blocked);
-    void setAllValidators();
-
+    Q_PROPERTY(QMultiLineTextVisualizer *debugOutput READ debugOutput WRITE setDebugOutput NOTIFY debugOutputChanged)
 };
 
 #endif // QMODBUSSETUPVIEWER_H
