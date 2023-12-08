@@ -6,15 +6,18 @@
 #include <QCoreApplication>
 #include "stringUtils.h"
 
-class QSSHCommand : public QObject {
+class QSSHCommand : public QObject
+{
     Q_OBJECT
-    Q_PROPERTY(QString sshClient READ sshClient WRITE setSshClient NOTIFY sshClientChanged)
-    Q_PROPERTY(QString hostName READ hostName WRITE setHostName NOTIFY hostNameChanged)
-    Q_PROPERTY(int portNum READ portNum WRITE setPortNum NOTIFY portNumChanged)
-    Q_PROPERTY(QString keyFile READ keyFile WRITE setKeyFile NOTIFY keyFileChanged)
-    Q_PROPERTY(QString password READ password WRITE setPassword NOTIFY passwordChanged)
-    Q_PROPERTY(QString userName READ userName WRITE setUserName NOTIFY userNameChanged)
-    Q_PROPERTY(bool    withSsh2 READ getWithLibSSH2 WRITE setWithLibSSH2 NOTIFY withLibSSH2Changed)
+    Q_PROPERTY(QString sshClient   READ sshClient      WRITE setSshClient   NOTIFY sshClientChanged   )
+    Q_PROPERTY(QString hostName    READ hostName       WRITE setHostName    NOTIFY hostNameChanged    )
+    Q_PROPERTY(int     portNum     READ portNum        WRITE setPortNum     NOTIFY portNumChanged     )
+    Q_PROPERTY(QString keyFile     READ keyFile        WRITE setKeyFile     NOTIFY keyFileChanged     )
+    Q_PROPERTY(QString password    READ password       WRITE setPassword    NOTIFY passwordChanged    )
+    Q_PROPERTY(QString userName    READ userName       WRITE setUserName    NOTIFY userNameChanged    )
+    Q_PROPERTY(bool    withSsh2    READ getWithLibSSH2 WRITE setWithLibSSH2 NOTIFY withLibSSH2Changed )
+    Q_PROPERTY(QString lastCommand READ getLastCommand WRITE setLastCommand NOTIFY lastCommandChanged )
+
 public:
     QSSHCommand(QObject *parent = nullptr);
 
@@ -42,35 +45,37 @@ public:
     bool getWithLibSSH2() const;
     void setWithLibSSH2(bool newWithLibSSH2);
 
-    void getModulesDefinitions();
-    void downloadModulesDefinitions(QString params);
-    void downloadModbusSetup(QString iniModbusSetupPath);
-    void isServerRunning();
-    void listFolder(QString path);
-    void startServer();
-    void stopServer ();
+    void getModulesDefinitions      ()                           ;
+    void downloadModulesDefinitions (QString params)             ;
+    void downloadModbusSetup        (QString iniModbusSetupPath) ;
+    void downloadMappingSetup       (QString modbusMappingPath)  ;
+    void isServerRunning            ()                           ;
+    void listFolder                 (QString path)               ;
+    void startServer                ()                           ;
+    void stopServer                 ()                           ;
 
 
     const QString &getLastCommand() const;
     void setLastCommand(const QString &newLastCommand);
 
 signals:
-    void commandExecutedSignal       (const QString &output     , const QString &lastCommand);
-    void errorOccurredSignal         (const QString &errorString, const QString &lastCommand);
-    void listFileDoneSignal          (const QString &output     , const QString &lastCommand);
-    void moduleListRetrievedSignal   (const QString &output     , const QString &lastCommand);
-    void moduleDownloadedSignal      (const QString &output     , const QString &lastCommand);
-    void modbusSetupDownloadedSignal (const QString &output     , const QString &lastCommand);
-    void serverStateSignal           (const bool &isRunning     , const QString &lastCommand);
-    void serverStartedSignal         (const QString &lastCommand);
-    void serverStartSuccesfullSignal (const int &screenSession  , const QString &lastCommand);
-    void serverStopedSignal          (const QString &lastCommand);
+    void commandExecutedSignal       ( const QString &output        , const QString &lastCommand );
+    void errorOccurredSignal         ( const QString &errorString   , const QString &lastCommand );
+    void listFileDoneSignal          ( const QString &output        , const QString &lastCommand );
+    void moduleListRetrievedSignal   ( const QString &output        , const QString &lastCommand );
+    void moduleDownloadedSignal      ( const QString &output        , const QString &lastCommand );
+    void modbusSetupDownloadedSignal ( const QString &output        , const QString &lastCommand );
+    void modbusMappingLoadedSignal   ( const QString &output        , const QString &lastCommand );
+    void serverStateSignal           ( const bool    &isRunning     , const QString &lastCommand );
+    void serverStartedSignal         ( const QString &lastCommand                                );
+    void serverStartSuccesfullSignal ( const int     &screenSession , const QString &lastCommand );
+    void serverStopedSignal          ( const QString &lastCommand);
 
-    void sshClientChanged();
-    void hostNameChanged();
-    void portNumChanged();
-    void keyFileChanged();
-    void passwordChanged();
+    void sshClientChanged () ;
+    void hostNameChanged  () ;
+    void portNumChanged   () ;
+    void keyFileChanged   () ;
+    void passwordChanged  () ;
 
     void userNameChanged();
     void withLibSSH2Changed();
@@ -81,18 +86,17 @@ private:
     QString constructSSHCommand(const QString &command, const QString &parameter) const;
     void executeProcess(const QString &command);
 
-    QString m_sshClient;
-    QString m_hostName;
-    int     m_portNum = 22;
-    QString m_userName;
-    QString m_password;
-    QString m_keyFile;
+    QString  m_sshClient;
+    QString  m_hostName;
+    int      m_portNum = 22;
+    QString  m_userName;
+    QString  m_password;
+    QString  m_keyFile;
     QProcess m_process;
-    QString lastCommand;
+    QString  lastCommand;
 
-    bool m_withLibSSH2 = false;
+    bool     m_withLibSSH2 = false;
 
-    Q_PROPERTY(QString lastCommand READ getLastCommand WRITE setLastCommand NOTIFY lastCommandChanged)
 
 private slots:
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus);

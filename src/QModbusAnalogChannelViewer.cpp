@@ -35,6 +35,19 @@ void QModbusAnalogChannelViewer::paintEvent(QPaintEvent *event) {
     painter.drawRect(0, 0, width() - 1, height() - 1); // Draw a rectangle border
 }
 
+QLabel *QModbusAnalogChannelViewer::getValueLabel() const
+{
+    return valueLabel;
+}
+
+void QModbusAnalogChannelViewer::setValueLabel(QLabel *newValueLabel)
+{
+    if (valueLabel == newValueLabel)
+        return;
+    valueLabel = newValueLabel;
+    emit valueLabelChanged();
+}
+
 QLabel *QModbusAnalogChannelViewer::getChannelLabel() const
 {
     return channelLabel;

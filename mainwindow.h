@@ -23,7 +23,11 @@
 #include "./src/QMultiLineTextVisualizer.h"
 #include "./src/QCrioModulesDataExtractor.h"
 #include "./src/QModbusSetupViewer.h"
+#include "./src/QModbusAnalogViewer.h"
 #include "./src/QCrioViewWidget.h"
+
+//tests
+#include "./src/QMappingViewerWidget.h"
 
 class QProgressBar     ;
 class QMessageBox      ;
@@ -48,18 +52,21 @@ public:
 
 
 private:
+
     //visual placing objects
-    Ui::MainWindow            *ui              ;
-    QVBoxLayout               *mainLayout      = nullptr;
+    Ui::MainWindow            *ui                            ;
+    QVBoxLayout               *mainLayout           = nullptr;
     //this class is in charge to intercept crio udp debug datagrams
-    QTCPDebugClient           *m_crioDebugger  = nullptr;
-    QTabWidget                *tabWidget       = nullptr;
+    QTCPDebugClient           *m_crioDebugger       = nullptr;
+    QTabWidget                *tabWidget            = nullptr;
     //this class is in charge to extract modules information from ini files
-    QCrioModulesDataExtractor *moduleExtractor = nullptr;
+    QCrioModulesDataExtractor *moduleExtractor      = nullptr;
     //this class handle all the basic widgets for the user to connect and test the crio
-    QCrioViewWidget *crioViewTab = nullptr;
+    QCrioViewWidget           *crioViewTab          = nullptr;
     //this class handle all the basic widgets to deal with the crio modbus layer
-    QModbusSetupViewer     *modbusSetupViewer  = nullptr;
+    QModbusSetupViewer        *modbusSetupViewer    = nullptr;
+    //
+    QMappingViewerWidget      *modbusMappingViewer  = nullptr;
     //this class handle all the ssh communication through putty tools and later sshlib2
     QSSHCommand *sshCommand         = nullptr;
     //to track the last command sent
@@ -76,7 +83,7 @@ private:
     QStringList      moduleList             ;
     QStringList      currentModulesPathList ;
     QStringList      voltageModulesPathList ;
-    int              currentModuleIndex;
+    int              currentModuleIndex     ;
 
 
 
@@ -97,6 +104,7 @@ private:
 
     QString   iniModulesLocalPath = ""                     ;
     QString   iniModbusSetupPath  = ""                     ;
+    QString   modbusMappingPath   = ""                     ;
     void      handleConnection               ()            ;
     void      downloadModulesDefinitions     (int index)   ;
     QString   retriveStringFromListViewIndex (int rowIndex);
@@ -120,6 +128,10 @@ private slots:
     //this slot is triggered when sshCommand get the response to a "downloadModbusSetup" query though this command in ssh. bat
     //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
     void onModubusParamFileDownloaded(const QString &output    , const QString &lastCommand);
+
+    //this slot is triggered when sshCommand get the response to a "downloadModbusSetup" query though this command in ssh. bat
+    //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
+    void onModbusMappingFileDownloaded(const QString &output    , const QString &lastCommand);
 
     //this slot is triggered when sshCommand command get the response to a "downloadModule" module query though this command in ssh. bat
     //pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%

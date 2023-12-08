@@ -17,8 +17,13 @@ public:
     QLabel *getChannelLabel() const;
     void setChannelLabel(QLabel *newChannelLabel);
 
+    QLabel *getValueLabel() const;
+    void setValueLabel(QLabel *newValueLabel);
+
 signals:
     void channelLabelChanged();
+
+    void valueLabelChanged();
 
 protected:
     void paintEvent(QPaintEvent *event);
@@ -27,6 +32,7 @@ private:
     QLabel *channelLabel;
     QLabel *valueLabel;
     Q_PROPERTY(QLabel *channelLabel READ getChannelLabel WRITE setChannelLabel NOTIFY channelLabelChanged)
+    Q_PROPERTY(QLabel *valueLabel READ getValueLabel WRITE setValueLabel NOTIFY valueLabelChanged)
 };
 
 #endif // QMODBUSANALOGCHANNELVIEWER_H

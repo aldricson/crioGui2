@@ -103,6 +103,10 @@ void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
     {
         emit modbusSetupDownloadedSignal(output, lastCommand);
     }
+    else if (lastCommand == "downloadModbusMapping")
+    {
+        emit modbusMappingLoadedSignal(output, lastCommand);
+    }
     // Handling 'serverState' command - used to check the state of the server.
     else if (lastCommand == "serverState")
     {
@@ -249,6 +253,19 @@ void QSSHCommand::downloadModbusSetup(QString iniModbusSetupPath)
     {
         QString params = "/home/dataDrill/modBus.ini "+iniModbusSetupPath+"modBus.ini";
         sendCommand("downloadModbusSetup", params);
+    }
+    else
+    {
+        //TODO
+    }
+}
+
+void QSSHCommand::downloadMappingSetup(QString modbusMappingPath)
+{
+    if (!m_withLibSSH2)
+    {
+        QString params = "/home/dataDrill/mapping.csv "+modbusMappingPath+"mapping.csv";
+        sendCommand("downloadModbusMapping", params);
     }
     else
     {

@@ -33,8 +33,6 @@ namespace EnumHelper {
        }
        return result;
    }
-
-
    
    template <typename E>
    QString toString(E value)
@@ -68,16 +66,22 @@ namespace EnumHelper {
 namespace globalEnumSpace {
 
 Q_NAMESPACE
-//*******************************************
-//****          crio 9056                 ***
-//*******************************************
-enum ModuleType {
+enum ModuleType
+{
     ANALOG  = 0,
     DIGITAL = 1,
     COUNTER = 2,
     CODER   = 3
 };
 Q_ENUM_NS (ModuleType)
+
+
+enum class ModuleIo
+{
+    INPUT = 0,
+    OUTPUT = 1
+};
+Q_ENUM_NS (ModuleIo)
 
 
 

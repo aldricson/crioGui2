@@ -6,19 +6,19 @@
 #include <QGroupBox>
 #include <QMessageBox>
 #include <QTimer>
+#include <QModbusReply>
 #include "QtTcpClient.h"
 #include "QMultiLineTextVisualizer.h"
 #include "QModbusAnalogViewer.h"
 #include "QBetterSwitchButton.h"
 #include "QModbusCrioClient.h"
 
-
 QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     : QWidget(parent)
 {
     //the class in charge of retriving datas from the crio modbus
     m_modbusClient   = new QModbusCrioClient(this);
-    connect(m_modbusClient, &QModbusCrioClient::analogsDataReady, this, &QModbusSetupViewer::OnAnalogsDataReady, Qt::QueuedConnection);
+    //connect(m_modbusClient, &QModbusCrioClient::analogsDataReady, this, &QModbusSetupViewer::OnAnalogsDataReady, Qt::QueuedConnection);
     //modbus poller when the modbus is in simulation mode
     createSimulTimer();
     //to request the command server
@@ -49,15 +49,15 @@ QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     createLoadSaveUploadButtons(m_containerGroupBox);
     // Create a form layout for the m_modbusCapacitiesGroupBox
     QFormLayout *modbusCapacitiesLayout = new QFormLayout(m_modbusCapacitiesGroupBox);
-    modbusCapacitiesLayout->addRow("Coils Max:", coilsLineEdit);
-    modbusCapacitiesLayout->addRow("Discrete Inputs Max:", discreteInputsLineEdit);
+    modbusCapacitiesLayout->addRow("Coils Max:"            , coilsLineEdit);
+    modbusCapacitiesLayout->addRow("Discrete Inputs Max:"  , discreteInputsLineEdit);
     modbusCapacitiesLayout->addRow("Holding Registers Max:", holdingRegistersLineEdit);
-    modbusCapacitiesLayout->addRow("Input Registers Max:", inputRegistersLineEdit);
+    modbusCapacitiesLayout->addRow("Input Registers Max:"  , inputRegistersLineEdit);
     m_modbusCapacitiesGroupBox->setLayout(modbusCapacitiesLayout);
 
     // Create a form layout for the m_networkGroupBox
     QFormLayout *networkLayout = new QFormLayout(m_networkGroupBox);
-    networkLayout->addRow("Listening Port:", listeningPortLineEdit);
+    networkLayout->addRow("Listening Port:"     , listeningPortLineEdit);
     networkLayout->addRow("Listening Interface:", listeningInterfaceIpEdit);
     m_networkGroupBox->setLayout(networkLayout);
 
@@ -252,8 +252,6 @@ void QModbusSetupViewer::onSimulationStarted(const QString &response)
 {
     if (response.contains("ACK"))
     {
-        m_modbusClient->setIp(m_host);
-        m_modbusClient->setPort(502);
         m_nbAnalogics = nbAnalogsInLineEdit->text().toInt();
         compatibilityLayerSwitch->getState() ? m_exlogOffset = 1 : m_exlogOffset = 0;
         m_comControl->addLastOutput("Modbus server simulation on");
@@ -288,15 +286,69 @@ void QModbusSetupViewer::onSimulationStoped(const QString &response)
 
 void QModbusSetupViewer::onSimulTimer()
 {
-    m_modbusSimTimer->stop(); //avoid reentry
-    m_modbusClient->readAnalogics(m_exlogOffset,m_nbAnalogics);
+    m_modbusSimTimer->stop(); // Avoid reentry
+
+    QModbusReply *reply = m_modbusClient->readInputRegisters(1, m_exlogOffset, m_nbAnalogics);
+    if (reply)
+    {
+        connect(reply, &QModbusReply::finished, this, &QModbusSetupViewer::processModbusReply);
+    }
+    else
+    {
+        // Handle the error or retry
+        if (m_modbusReading) m_modbusSimTimer->start();
+    }
 }
+
+
+void QModbusSetupViewer::processModbusReply()
+{
+    auto reply = qobject_cast<QModbusReply *>(sender());
+    if (!reply)
+        return;
+
+    if (reply->error() == QModbusDevice::NoError) {
+        const QModbusDataUnit unit = reply->result();
+        QVector<quint16> data;
+        for (uint i = 0; i < unit.valueCount(); i++) {
+            data.append(unit.value(i));
+        }
+        OnAnalogsDataReady(data);
+    } else {
+        // Handle error
+        qInfo() << "Modbus error:" << reply->errorString();
+    }
+
+    reply->deleteLater();
+
+    // Reauthorize a new entry
+    if (m_modbusReading) m_modbusSimTimer->start();
+}
+
 
 void QModbusSetupViewer::OnAnalogsDataReady(const QVector<quint16> &data)
 {
-    qInfo()<<data;
+    for (int i=0;i<data.count();++i)
+    {
+        QLabel *lbl = analogsViewer()->channelViewers()[i]->getValueLabel();
+        lbl->setText(QString::number(data[i]));
+    }
+
     //authorize a new entry
     if (m_modbusReading) m_modbusSimTimer->start();
+}
+
+QModbusAnalogViewer *QModbusSetupViewer::analogsViewer() const
+{
+    return m_analogsViewer;
+}
+
+void QModbusSetupViewer::setAnalogsViewer(QModbusAnalogViewer *newAnalogsViewer)
+{
+    if (m_analogsViewer == newAnalogsViewer)
+        return;
+    m_analogsViewer = newAnalogsViewer;
+    emit analogsViewerChanged();
 }
 
 QMultiLineTextVisualizer *QModbusSetupViewer::debugOutput() const
@@ -327,6 +379,7 @@ void QModbusSetupViewer::setPort(quint16 newPort)
 void QModbusSetupViewer::connectToServer()
 {
     m_tcpClient->connectToServer(m_host,m_port,"Modbus control");
+    m_modbusClient->connectToServer(m_host,502);
 }
 
 const QString &QModbusSetupViewer::host() const

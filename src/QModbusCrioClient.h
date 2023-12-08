@@ -2,44 +2,36 @@
 #define QModbusCrioClient_H
 
 #include <QObject>
-#include <QModbusTcpClient>
+#include <QModbusClient>
 #include <QModbusDataUnit>
-#include <QVariant>
 
-class QModbusCrioClient : public QObject {
+class QVariant;
+
+class QModbusCrioClient : public QObject
+{
     Q_OBJECT
-    Q_PROPERTY(QString ip READ ip WRITE setIp NOTIFY ipChanged)
-    Q_PROPERTY(int port READ port WRITE setPort NOTIFY portChanged)
 
 public:
     explicit QModbusCrioClient(QObject *parent = nullptr);
     ~QModbusCrioClient();
 
-    QString ip() const;
-    void setIp(const QString &ip);
+    void setupModbusClient(int type); // type: 0 for Serial, 1 for TCP
+    void connectToServer(const QString &ipAddress, int port);
+    void disconnectFromServer();
 
-    int port() const;
-    void setPort(int port);
-
-    void readAnalogics(int registerStartIndex, int nbRegistersToRead);
+    QModbusReply* sendReadRequest(const QModbusDataUnit &readUnit, int serverAddress);
+    QModbusReply* sendWriteRequest(const QModbusDataUnit &writeUnit, int serverAddress);
+    QModbusReply* readInputRegisters(int serverAddress, int startIndex, int numberOfRegisters);
 
 signals:
-    void analogsDataReady(const QVector<quint16> &data);
     void errorOccurred(const QString &error);
-
-    void ipChanged(const QString &ip);
-    void portChanged(int port);
-
-private slots:
-    void onReadReady();
+    void connectionStateChanged(bool connected);
 
 private:
-    QModbusTcpClient *m_modbusClient;
-    QString m_ip;
-    int m_port;
+    QModbusClient *modbusClient = nullptr;
 
-    void setupModbusClient();
-    void handleError(const QString &error);
+    void handleStateChanged(QModbusDevice::State state);
+    void handleErrorOccurred(QModbusDevice::Error error);
 };
 
-#endif // QMODBUSCLIENT_H
+#endif // QModbusCrioClient_H

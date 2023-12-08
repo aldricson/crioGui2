@@ -42,7 +42,6 @@ void QTCPDebugClient::onConnected() {
 void QTCPDebugClient::onDataReceived() {
     QString message = QString::fromUtf8(socket->readAll());
     emit debugMessageReceived(message);
-    qDebug() << "Debug message received:" << message;
 }
 
 void QTCPDebugClient::displayError(QAbstractSocket::SocketError socketError) {

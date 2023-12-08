@@ -12,25 +12,27 @@
 
 //Forward declarations may speed up compilation time a bit
 //so the includes are now in cpp file
-class QLineEdit;
-class QSpinBox;
-class QPushButton;
-class QGroupBox;
-class QMessageBox;
-class QtTcpClient;
-class QModbusAnalogViewer;
+class QLineEdit               ;
+class QSpinBox                ;
+class QPushButton             ;
+class QGroupBox               ;
+class QMessageBox             ;
+class QtTcpClient             ;
+class QModbusAnalogViewer     ;
 class QMultiLineTextVisualizer;
-class QBetterSwitchButton;
-class QModbusCrioClient;
-class QTimer;
+class QBetterSwitchButton     ;
+class QModbusCrioClient       ;
+class QModbusReply            ;
+class QTimer                  ;
 
 class QModbusSetupViewer : public QWidget
 {
     Q_OBJECT
     Q_PROPERTY(QString fileName READ fileName WRITE setFileName NOTIFY fileNameChanged)
-    Q_PROPERTY(QString host READ host WRITE setHost NOTIFY hostChanged)
-    Q_PROPERTY(quint16 port READ port WRITE setPort NOTIFY portChanged)
-
+    Q_PROPERTY(QString host     READ host     WRITE setHost     NOTIFY hostChanged)
+    Q_PROPERTY(quint16 port     READ port     WRITE setPort     NOTIFY portChanged)
+    Q_PROPERTY(QMultiLineTextVisualizer *debugOutput   READ debugOutput   WRITE setDebugOutput   NOTIFY debugOutputChanged)
+    Q_PROPERTY(QModbusAnalogViewer      *analogsViewer READ analogsViewer WRITE setAnalogsViewer NOTIFY analogsViewerChanged)
 
 public:
     explicit QModbusSetupViewer(QWidget *parent = nullptr);
@@ -48,6 +50,9 @@ public:
 
     QMultiLineTextVisualizer *debugOutput() const;
     void setDebugOutput(QMultiLineTextVisualizer *newDebugOutput);
+
+    QModbusAnalogViewer *analogsViewer() const;
+    void setAnalogsViewer(QModbusAnalogViewer *newAnalogsViewer);
 
 public slots:
     void loadFromFile();
@@ -71,6 +76,8 @@ signals:
     void portChanged();
 
     void debugOutputChanged();
+
+    void analogsViewerChanged();
 
 private:
     QSettings *settings                    = nullptr;
@@ -115,8 +122,9 @@ private:
     void createLoadSaveUploadButtons(QGroupBox *parentGroupBox )      ;
     void createSimulTimer           ()                                ;
     void setUpLayout                ()                                ;
+    void processModbusReply         ()                                ;
 
-    Q_PROPERTY(QMultiLineTextVisualizer *debugOutput READ debugOutput WRITE setDebugOutput NOTIFY debugOutputChanged)
+
 };
 
 #endif // QMODBUSSETUPVIEWER_H

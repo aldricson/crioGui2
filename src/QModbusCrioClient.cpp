@@ -1,90 +1,107 @@
 #include "QModbusCrioClient.h"
-#include <QModbusReply>
+#include <QModbusTcpClient>
+#include <QModbusRtuSerialClient>
+#include <QVariant>
 
 QModbusCrioClient::QModbusCrioClient(QObject *parent)
-    : QObject(parent), m_port(502)
+    : QObject(parent), modbusClient(nullptr)
 {
-    m_modbusClient = new QModbusTcpClient(this);
-    setupModbusClient();
+    setupModbusClient(1);
 }
 
-QModbusCrioClient::~QModbusCrioClient() {
-    m_modbusClient->disconnectDevice();
+QModbusCrioClient::~QModbusCrioClient()
+{
+    if (modbusClient)
+        modbusClient->disconnectDevice();
+    delete modbusClient;
 }
 
-QString QModbusCrioClient::ip() const {
-    return m_ip;
-}
-
-void QModbusCrioClient::setIp(const QString &ip) {
-    if (m_ip != ip) {
-        m_ip = ip;
-        setupModbusClient();
-        emit ipChanged(ip);
-    }
-}
-
-int QModbusCrioClient::port() const {
-    return m_port;
-}
-
-void QModbusCrioClient::setPort(int port) {
-    if (m_port != port) {
-        m_port = port;
-        setupModbusClient();
-        emit portChanged(port);
-    }
-}
-
-void QModbusCrioClient::readAnalogics(int registerStartIndex, int nbRegistersToRead) {
-    if (!m_modbusClient->connectDevice())
+void QModbusCrioClient::setupModbusClient(int type)
+{
+    if (modbusClient)
     {
-        qInfo()<<"connection failed";
-        handleError("Connection failed");
-        return;
+        modbusClient->disconnectDevice();
+        delete modbusClient;
+        modbusClient = nullptr;
     }
-    qInfo()<<"connection success";
-    QModbusDataUnit readUnit(QModbusDataUnit::InputRegisters, registerStartIndex, nbRegistersToRead);
-    QModbusReply *reply = m_modbusClient->sendReadRequest(readUnit, 0); // Unit ID is set to 1
 
-    if (reply) {
-        if (!reply->isFinished()) {
-            connect(reply, &QModbusReply::finished, this, &QModbusCrioClient::onReadReady);
-        } else {
-            delete reply; // Broadcast replies return immediately
-        }
-    } else {
-        handleError("Read error");
+    if (type == 0) {
+        modbusClient = new QModbusRtuSerialClient(this);
     }
+    else if (type == 1)
+    {
+        modbusClient = new QModbusTcpClient(this);
+        qInfo()<<"modbus TCP client created @"<<modbusClient;
+    }
+
+    connect(modbusClient, &QModbusClient::stateChanged,  this, &QModbusCrioClient::handleStateChanged);
+    connect(modbusClient, &QModbusClient::errorOccurred, this, &QModbusCrioClient::handleErrorOccurred);
+    qInfo()<<"modbus TCP client signal connected"<<modbusClient;
 }
 
-void QModbusCrioClient::onReadReady() {
-    auto reply = qobject_cast<QModbusReply *>(sender());
-    if (!reply) {
-        return;
-    }
-
-    if (reply->error() == QModbusDevice::NoError) {
-        const QModbusDataUnit unit = reply->result();
-        QVector<quint16> data;
-        for (uint i = 0; i < unit.valueCount(); i++) {
-            data.push_back(unit.value(i));
-        }
-        emit analogsDataReady(data);
-    } else {
-        handleError(reply->errorString());
-    }
-
-    reply->deleteLater();
-}
-
-void QModbusCrioClient::setupModbusClient() {
-    m_modbusClient->setConnectionParameter(QModbusDevice::NetworkAddressParameter, QVariant(m_ip));
-    m_modbusClient->setConnectionParameter(QModbusDevice::NetworkPortParameter, QVariant(m_port));
-}
-
-
-void QModbusCrioClient::handleError(const QString &error)
+void QModbusCrioClient::connectToServer(const QString &ipAddress, int port)
 {
-    emit errorOccurred(error);
+    if (!modbusClient)
+        return;
+
+    modbusClient->setConnectionParameter(QModbusDevice::NetworkPortParameter, QVariant(port));
+    modbusClient->setConnectionParameter(QModbusDevice::NetworkAddressParameter, ipAddress);
+    qInfo()<<"modbus connection parameters set:"<<ipAddress<<":"<<port;
+
+    modbusClient->setTimeout(1000); // Set timeout (in milliseconds)
+    modbusClient->setNumberOfRetries(3); // Set number of retries
+
+    // Attempt to connect
+    if (!modbusClient->connectDevice())
+    {
+        qInfo()<<"Failed to connect: " + modbusClient->errorString();
+        emit errorOccurred("Failed to connect: " + modbusClient->errorString());
+        return;
+    }
+    qInfo()<<"Modbus client connection success";
+}
+
+
+void QModbusCrioClient::disconnectFromServer()
+{
+    if (modbusClient)
+        modbusClient->disconnectDevice();
+}
+
+QModbusReply* QModbusCrioClient::sendReadRequest(const QModbusDataUnit &readUnit, int serverAddress)
+{
+    if (!modbusClient || modbusClient->state() != QModbusDevice::ConnectedState)
+        return nullptr;
+
+    return modbusClient->sendReadRequest(readUnit, serverAddress);
+}
+
+QModbusReply* QModbusCrioClient::sendWriteRequest(const QModbusDataUnit &writeUnit, int serverAddress)
+{
+    if (!modbusClient || modbusClient->state() != QModbusDevice::ConnectedState)
+        return nullptr;
+
+    return modbusClient->sendWriteRequest(writeUnit, serverAddress);
+}
+
+void QModbusCrioClient::handleStateChanged(QModbusDevice::State state)
+{
+    emit connectionStateChanged(state == QModbusDevice::ConnectedState);
+}
+
+void QModbusCrioClient::handleErrorOccurred(QModbusDevice::Error error)
+{
+    emit errorOccurred(modbusClient->errorString());
+}
+
+QModbusReply* QModbusCrioClient::readInputRegisters(int serverAddress, int startIndex, int numberOfRegisters)
+{
+    if (!modbusClient || modbusClient->state() != QModbusDevice::ConnectedState)
+        return nullptr;
+
+    // Create a QModbusDataUnit for input registers
+    QModbusDataUnit readUnit(QModbusDataUnit::InputRegisters, startIndex, numberOfRegisters);
+
+    // Send the read request and return the reply object
+    return modbusClient->sendReadRequest(readUnit, serverAddress);
 }

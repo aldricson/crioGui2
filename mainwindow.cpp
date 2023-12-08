@@ -14,21 +14,22 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
-    iniModulesLocalPath = QCoreApplication::applicationDirPath()+"/"+"modules"+"/";
-    iniModbusSetupPath  = QCoreApplication::applicationDirPath()+"/"+"modbus"+"/";
-    moduleExtractor     = new QCrioModulesDataExtractor(this);
-    m_crioDebugger      = new QTCPDebugClient(this);
+    iniModulesLocalPath = QCoreApplication::applicationDirPath() + "/" + "modules" + "/" ;
+    iniModbusSetupPath  = QCoreApplication::applicationDirPath() + "/" + "modbus"  + "/" ;
+    modbusMappingPath   = QCoreApplication::applicationDirPath() + "/" + "mapping" + "/" ;
+    moduleExtractor     = new QCrioModulesDataExtractor (this) ;
+    m_crioDebugger      = new QTCPDebugClient           (this) ;
     connect (m_crioDebugger, &QTCPDebugClient::debugMessageReceived, this, &MainWindow::onCrioDebugMessage, Qt::QueuedConnection);
 
     ui->setupUi(this);
     tabWidget = new QTabWidget(this);
 
     // Add tabs
-    tabWidget->addTab(createCrioViewTab(), tr("CrioView"));
-    tabWidget->addTab(createModbusViewTab(), tr("ModbusView"));
-    tabWidget->addTab(createGlobalParametersTab(), tr("GlobalParameters"));
-    tabWidget->addTab(createDeviceParametersTab(), tr("DeviceParameters"));
-    tabWidget->addTab(createMappingTableTab(), tr("MappingTable"));
+    tabWidget -> addTab ( createCrioViewTab         () , tr("CrioView"         ));
+    tabWidget -> addTab ( createModbusViewTab       () , tr("ModbusView"       ));
+    tabWidget -> addTab ( createGlobalParametersTab () , tr("GlobalParameters" ));
+    tabWidget -> addTab ( createDeviceParametersTab () , tr("DeviceParameters" ));
+    tabWidget -> addTab ( createMappingTableTab     () , tr("MappingTable"     ));
     setCentralWidget(tabWidget);
 }
 
@@ -72,7 +73,11 @@ void MainWindow::setupSSHModule()
 
                         //sent when modbus.ini is
                         //effectively downloaded
-    connect(sshCommand, &QSSHCommand::modbusSetupDownloadedSignal  , this, &MainWindow::onModubusParamFileDownloaded, Qt::QueuedConnection);
+    connect(sshCommand, &QSSHCommand::modbusSetupDownloadedSignal  , this , &MainWindow::onModubusParamFileDownloaded, Qt::QueuedConnection);
+
+                        //sent when mapping.csv is
+                        //effectively downloaded
+    connect(sshCommand, &QSSHCommand::modbusMappingLoadedSignal    , this , &MainWindow::onModbusMappingFileDownloaded , Qt::QueuedConnection);
 
                         //Guess this one...
     connect(sshCommand, &QSSHCommand::errorOccurredSignal          , this , &MainWindow::onSSHError                ,Qt::QueuedConnection);
@@ -146,6 +151,8 @@ QWidget *MainWindow::createMappingTableTab()
 {
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
+    modbusMappingViewer = new QMappingViewerWidget(this);
+    layout->addWidget(modbusMappingViewer, 0,1,1,1);
     // Add widgets to layout as needed
     return tab;
 }
@@ -301,11 +308,19 @@ void MainWindow::onModubusParamFileDownloaded(const QString &output, const QStri
     lastSshCommand = lastCommand;
     crioViewTab->terminalOutput()->addLastCommand(lastCommand);
     crioViewTab->terminalOutput()->addLastOutput(output);
-    modbusSetupViewer->setFileName(iniModbusSetupPath+"modbus.ini");
-    modbusSetupViewer->loadFromFile();
+    sshCommand->downloadMappingSetup(modbusMappingPath);
+    modbusSetupViewer->setFileName  (iniModbusSetupPath+"modbus.ini");
+    modbusSetupViewer->loadFromFile ();
     modbusSetupViewer->setHost(crioViewTab->ipEdit()->ipAddress());
     modbusSetupViewer->setPort(commandPort);
     modbusSetupViewer->connectToServer();
+}
+
+void MainWindow::onModbusMappingFileDownloaded(const QString &output, const QString &lastCommand)
+{
+    lastSshCommand = lastCommand;
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastOutput(output);
 
 }
 
@@ -361,7 +376,7 @@ void MainWindow::onServerStarted(const QString &lastCommand)
     fromStartServer = true;
     crioViewTab->terminalOutput()->addLastCommand (lastCommand);
     crioViewTab->terminalOutput()->addLastOutput("server starting");
-    sshCommand->isServerRunning();
+    sshCommand ->isServerRunning();
 }
 
 void MainWindow::onServerStoped(const QString &lastCommand)
@@ -418,7 +433,6 @@ void MainWindow::onCrioDebugMessage(const QString &message)
 
 void MainWindow::onServerChangeState(bool isOn)
 {
-
     if (isOn)
     {
         sshCommand->startServer();
