@@ -14,9 +14,23 @@ if "%COMMAND%" == "getModuleList" (
 ) else if "%COMMAND%" == "dir" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "cd %PARAMETER1%; ls"
 ) else if "%COMMAND%" == "serverState" (
-    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "cd /home/dataDrill; sh dataDrillStatus.sh"
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillStatus.sh"
 ) else if "%COMMAND%" == "startServer" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "cd /home/dataDrill; sh dataDrillStart.sh"
+) else if "%COMMAND%" == "totalCPU" (
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalCPU.sh"
+) else if "%COMMAND%" == "dataDrillCPU" (
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillCPU.sh"
+) else if "%COMMAND%" == "totalHDD" (
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalHDD.sh"
+) else if "%COMMAND%" == "dataDrillHDD" (
+       plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillHDD.sh"
+) else if "%COMMAND%" == "dataDrillTotalRamUsage" (
+       plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalRamUsage.sh"
+) else if "%COMMAND%" == "dataDrillRamUsage" (
+              plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillRamUsage.sh"
+) else if "%COMMAND%" == "dataDrillGlobalStats" (
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillGlobalStats.sh"
 ) else if "%COMMAND%" == "stopServer" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "pkill -f dataDrill"
 ) else if "%COMMAND%" == "downloadModule" (

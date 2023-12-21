@@ -1,0 +1,8 @@
+QDonutGauge {
+  border: 1px solid darkgreen;
+  border-radius: 6px;
+  padding: 6px;
+  background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.025,
+                                    stop: 0 #757575, stop: 1 #000000);
+  color:#00EE00;
+}

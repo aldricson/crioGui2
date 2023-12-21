@@ -1,0 +1,19 @@
+QLineEdit {
+        border: 1px solid darkGreen;
+        border-radius: 6px;
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.25, stop: 0 #404040, stop: 1 #000000);
+        color:#D3D3D3;
+}
+
+QLineEdit[inError="true"] {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.5, stop: 0 #FFA07A, stop: 1 #DC143C);
+    color:black
+}
+
+QLineEdit[isMinValue="true"] {
+        color:#20B2AA
+}
+
+QLineEdit[isMaxValue="true"] {
+        color:#F08080
+}

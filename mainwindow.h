@@ -13,30 +13,24 @@
 #include <QDir>
 
 #include <algorithm>
-#include "./src/QSSHCommand.h"
-#include "./src/QIniTreeWidget.h"
-#include "./src/QtTcpClient.h"
+#include "./src/NetWorking/QSSHCommand.h"
+#include "./src/NetWorking/QtTcpClient.h"
+#include "./src/BasicWidgets/QBetterSwitchButton.h"
+#include "./src/BasicWidgets/QMultiLineTextVisualizer.h"
 #include "./src/stringUtils.h"
-#include "./src/QReadCurrentTestWidget.h"
-#include "./src/QReadVoltageTestWidget.h"
-#include "./src/QBetterSwitchButton.h"
-#include "./src/QMultiLineTextVisualizer.h"
-#include "./src/QCrioModulesDataExtractor.h"
-#include "./src/QModbusSetupViewer.h"
-#include "./src/QModbusAnalogViewer.h"
-#include "./src/QCrioViewWidget.h"
+#include "./src/Extractors/QCrioModulesDataExtractor.h"
+#include "./src/TabWidgets/QModbusSetupViewer.h"
+#include "./src/TabWidgets/QCrioViewWidget.h"
+#include "./src/TabWidgets/QMappingViewerWidget.h"
 
-//tests
-#include "./src/QMappingViewerWidget.h"
-
-class QProgressBar     ;
-class QMessageBox      ;
-class QListView        ;
-class QPushButton      ;
-class QLabel           ;
-class QTabWidget       ;
-class QIpAddressEditor ;
-class QTCPDebugClient  ;
+class QProgressBar            ;
+class QMessageBox             ;
+class QPushButton             ;
+class QLabel                  ;
+class QTabWidget              ;
+class QTCPDebugClient         ;
+class QDeviceParametersWidget ;
+class QGlobalParametersWidget ;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -63,9 +57,13 @@ private:
     QCrioModulesDataExtractor *moduleExtractor      = nullptr;
     //this class handle all the basic widgets for the user to connect and test the crio
     QCrioViewWidget           *crioViewTab          = nullptr;
+    //this class handle all the basic widgets to deal with modules hardware parameters
+    QDeviceParametersWidget   *devicesTab           = nullptr;
+    //this class handle all the basic widget to deal with Crio statistics
+    QGlobalParametersWidget   *globalTab            = nullptr;
     //this class handle all the basic widgets to deal with the crio modbus layer
     QModbusSetupViewer        *modbusSetupViewer    = nullptr;
-    //
+    //this class handle all the basic widgets to deal with the modbus mapping
     QMappingViewerWidget      *modbusMappingViewer  = nullptr;
     //this class handle all the ssh communication through putty tools and later sshlib2
     QSSHCommand *sshCommand         = nullptr;
@@ -87,7 +85,7 @@ private:
 
 
 
-    QIniTreeWidget  *iniTreeWidget;
+   // QIniTreeWidget  *iniTreeWidget;
 
 
 
@@ -148,6 +146,8 @@ private slots:
     //triggered when the start sequence is finished successfully
     void  onServerStartSuccesfull  (const int     &screenSession , const QString &lastCommand);
 
+    void onAccessDenied  (const QString &lastCommand);
+
     void onCommandServerLogRequest  (const QString &request);
     void onCommandServerLogResponse (const QString &response);
     void onCommanServerLogError     (const QString &error);
@@ -156,7 +156,7 @@ private slots:
 
 
 
-    void  onModuleItemDoubleClicked(const QModelIndex &index);
+    void  onModuleListUpdated(const QModelIndex &index);
     void  onServerChangeState      (bool isOn);
 
 

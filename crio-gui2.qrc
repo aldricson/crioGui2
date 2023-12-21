@@ -2,5 +2,10 @@
     <qresource prefix="/">
         <file>images/cacher.png</file>
         <file>images/oeil.png</file>
+        <file>images/down-arrow.png</file>
+        <file>images/vline.png</file>
+        <file>images/branch-more.png</file>
+        <file>images/branch-end.png</file>
+        <file>images/right-arrow.png</file>
     </qresource>
 </RCC>

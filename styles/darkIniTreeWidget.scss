@@ -1,0 +1,55 @@
+QTreeWidget {
+    border: 1px solid darkgreen;
+    border-radius: 6px;
+    padding: 6px;
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.025,
+                                      stop: 0 #757575, stop: 1 #000000);
+    color:#00EE00;
+}
+
+
+QTreeWidget::branch:has-siblings:!adjoins-item {
+    border-image: url(:/images/vline.png) 0;
+}
+
+QTreeWidget::branch:has-siblings:adjoins-item {
+    border-image: url(:/images/branch-more.png) 0;
+}
+
+
+QTreeView::branch:!has-children:!has-siblings:adjoins-item {
+    border-image: url(:/images/branch-end.png) 0;
+}
+
+
+QTreeWidget::branch:has-children:!has-siblings:closed,
+QTreeWidget::branch:closed:has-children:has-siblings {
+        border-image: none;
+        image: url(:/images/right-arrow.png);
+}
+
+QTreeWidget::branch:open:has-children:!has-siblings,
+QTreeWidget::branch:open:has-children:has-siblings  {
+        border-image: none;
+        image: url(:/images/down-arrow.png);
+}
+
+QHeaderView::section {
+    border: 1px solid darkgreen;
+    border-radius: 6px;
+    padding-left: 4px;
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.025,
+                                      stop: 0 #757575, stop: 1 #000000);
+    color:#00EE00;
+}
+
+QHeaderView {
+    border: 1px solid darkgreen;
+    border-radius: 6px;
+
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.025,
+                                      stop: 0 #757575, stop: 1 #000000);
+    color:#00EE00;
+}
+
+

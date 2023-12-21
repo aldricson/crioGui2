@@ -4,8 +4,19 @@
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QApplication crioGui2(argc, argv);
+
+    QFile styleFile(":/styles/dark1.scss");
+    if(styleFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream textStream(&styleFile);
+        QString styleSheet = textStream.readAll();
+        styleFile.close();
+        crioGui2.setStyleSheet(styleSheet);
+    }
+
+
     MainWindow w;
     w.show();
-    return a.exec();
+    return crioGui2.exec();
 }

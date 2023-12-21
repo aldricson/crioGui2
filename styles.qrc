@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>styles/dark1.scss</file>
+        <file>styles/darkScrollBar.scss</file>
+        <file>styles/scrollArea.scss</file>
+        <file>styles/darkAnalogViewer.scss</file>
+        <file>styles/darkModulesComboBoxes.scss</file>
+        <file>styles/darkChannelsComboBoxes.scss</file>
+        <file>styles/darkModbusChannelLE.scss</file>
+        <file>styles/darkMappingRowWidget.scss</file>
+        <file>styles/darkIniTreeWidget.scss</file>
+        <file>styles/darkDonutGauge.scss</file>
+    </qresource>
+</RCC>

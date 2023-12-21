@@ -2,22 +2,25 @@
 #include "./ui_mainwindow.h"
 #include <QProgressBar>
 #include <QMessageBox>
-#include <QListView>
+
 #include <QPushButton>
 #include <QLabel>
 #include <QTabWidget>
-#include "./src/QIpAddressEditor.h"
-#include "./src/QTCPDebugClient.h"
+#include "./src/NetWorking/QTCPDebugClient.h"
+#include "./src/TabWidgets/QDeviceParametersWidget.h"
+#include "./src/TabWidgets/QGlobalParametersWidget.h"
 
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+
+
     iniModulesLocalPath = QCoreApplication::applicationDirPath() + "/" + "modules" + "/" ;
     iniModbusSetupPath  = QCoreApplication::applicationDirPath() + "/" + "modbus"  + "/" ;
     modbusMappingPath   = QCoreApplication::applicationDirPath() + "/" + "mapping" + "/" ;
-    moduleExtractor     = new QCrioModulesDataExtractor (this) ;
+    moduleExtractor     = new QCrioModulesDataExtractor (iniModulesLocalPath,this) ;
     m_crioDebugger      = new QTCPDebugClient           (this) ;
     connect (m_crioDebugger, &QTCPDebugClient::debugMessageReceived, this, &MainWindow::onCrioDebugMessage, Qt::QueuedConnection);
 
@@ -95,6 +98,8 @@ void MainWindow::setupSSHModule()
 
                         //sent whan the server has been stoped
     connect(sshCommand, &QSSHCommand::serverStopedSignal           , this , &MainWindow::onServerStoped            ,Qt::QueuedConnection);
+
+    connect(sshCommand, &QSSHCommand::authenticationFailedSignal   , this  ,&MainWindow::onAccessDenied            ,Qt::QueuedConnection);
 }
 
 MainWindow::~MainWindow()
@@ -106,12 +111,12 @@ MainWindow::~MainWindow()
 QWidget *MainWindow::createCrioViewTab()
 {
     // This will create an instance of the QCrioViewWidget
-    crioViewTab = new QCrioViewWidget(this);
+    crioViewTab = new QCrioViewWidget(iniModulesLocalPath,this);
     // Any additional configurations or connections specific to MainWindow can be done here
     setupCurrentReader();
     setupVoltageReader();
     //this to show the inifile in a specialized widget if we double click an item
-    connect(crioViewTab->modulesListView(), &QListView::doubleClicked , this , &MainWindow::onModuleItemDoubleClicked, Qt::QueuedConnection);
+    connect(crioViewTab->modulesListView(), &QModulesIniListView::moduleListUpdatedSignal , this , &MainWindow::onModuleListUpdated, Qt::QueuedConnection);
     connect (crioViewTab, &QCrioViewWidget::sshConnectionAskedSignal  , this , &MainWindow::handleConnection,Qt::QueuedConnection);
     connect (crioViewTab, &QCrioViewWidget::serverChangeStateSignal   , this , &MainWindow::onServerChangeState, Qt::QueuedConnection);
     return crioViewTab;
@@ -131,18 +136,21 @@ QWidget *MainWindow::createModbusViewTab()
 
 QWidget *MainWindow::createGlobalParametersTab()
 {
+    globalTab = new QGlobalParametersWidget(this);
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-    // Add widgets to layout as needed
+    layout->addWidget(globalTab,0,0,1,1);
     return tab;
 }
 
 QWidget *MainWindow::createDeviceParametersTab()
 {
+    devicesTab = new QDeviceParametersWidget(iniModulesLocalPath,this);
+
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-    iniTreeWidget = new QIniTreeWidget(this);
-    layout->addWidget(iniTreeWidget, 0,0,1,1,Qt::AlignCenter);
+    //iniTreeWidget = new QIniTreeWidget(this);
+    layout->addWidget(devicesTab, 0,0,1,1);
     // Add widgets to layout as needed
     return tab;
 }
@@ -151,8 +159,9 @@ QWidget *MainWindow::createMappingTableTab()
 {
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-    modbusMappingViewer = new QMappingViewerWidget(this);
+    modbusMappingViewer = new QMappingViewerWidget(modbusMappingPath,moduleExtractor,this);
     layout->addWidget(modbusMappingViewer, 0,1,1,1);
+    modbusMappingViewer->enableAllControls(false);
     // Add widgets to layout as needed
     return tab;
 }
@@ -232,8 +241,8 @@ QString MainWindow::retriveStringFromListViewIndex(int rowIndex)
 void MainWindow::onSSHError(const QString &errorString, const QString &lastCommand)
 {
     lastSshCommand = lastCommand;
-    qDebug().noquote() << "Error:" << errorString;
-    qDebug()<<"last command:" << lastCommand;
+    crioViewTab->terminalOutput()->addLastCommand(lastCommand);
+    crioViewTab->terminalOutput()->addLastError(errorString);
 }
 
 void MainWindow::onLsCommandExecuted(const QString &output, const QString &lastCommand)
@@ -245,7 +254,6 @@ void MainWindow::onLsCommandExecuted(const QString &output, const QString &lastC
 
 void MainWindow::onModuleListRetrived(const QString &output, const QString &lastCommand)
 {
-    qInfo()<<"enter onModuleListRetrived";
     lastSshCommand = lastCommand;
     crioViewTab->terminalOutput()->addLastCommand(lastCommand);
     moduleList = output.split("\n", Qt::SkipEmptyParts);
@@ -253,8 +261,10 @@ void MainWindow::onModuleListRetrived(const QString &output, const QString &last
     crioViewTab->onResetModuleLoadProgressBar(0,moduleList.count()-1,0);
     // Sort the list based on the number in the filename
     sortQStringListBySuffix(moduleList,"_");
-    //update the interface withe the module list
-    crioViewTab->onUpdateModelList(moduleList);
+    //update the interface with the module list
+
+    crioViewTab->onUpdateModelList(devicesTab->iniTreeWidget(),moduleList);
+    devicesTab->onUpdateModelList (devicesTab->iniTreeWidget(),moduleList);
     //reset lists and trackig index
     currentModuleIndex = 0;
     currentModulesPathList.clear();
@@ -297,6 +307,19 @@ void MainWindow::onModuleIniFileDownloaded(const QString &output, const QString 
         else
         {
             // All modules are downloaded, let's update the user interface
+            //One we create devices objects from the config files
+            moduleExtractor->createDevicesFromConfig();
+            //crioViewTab->onUpdateModelList(iniTreeWidget,moduleList);
+            crioViewTab->onUpdateModelList(devicesTab->iniTreeWidget(),moduleList);
+
+
+            crioViewTab->modulesListView()->updateModelList(moduleList);
+            crioViewTab->modulesListView()->setIniTreeWidget(devicesTab->iniTreeWidget());
+            crioViewTab->modulesListView()->copyTo(devicesTab->modulesListView());
+
+
+
+
             crioViewTab->onUpdateControlsAfterModulesDownloaded(moduleExtractor,currentModulesPathList,voltageModulesPathList,commandPort);
             sshCommand->downloadModbusSetup(iniModbusSetupPath);
         }
@@ -321,27 +344,24 @@ void MainWindow::onModbusMappingFileDownloaded(const QString &output, const QStr
     lastSshCommand = lastCommand;
     crioViewTab->terminalOutput()->addLastCommand(lastCommand);
     crioViewTab->terminalOutput()->addLastOutput(output);
-
+    modbusMappingViewer->enableAllControls(true);
+    modbusMappingViewer->onLoad();
 }
 
 
-void MainWindow::onModuleItemDoubleClicked(const QModelIndex &index)
+void MainWindow::onModuleListUpdated(const QModelIndex &index)
 {
   if (index.isValid())
   {
-          QString fileName = iniModulesLocalPath + crioViewTab->moduleListModel()->data(index, Qt::DisplayRole).toString();
-          qInfo()<<fileName;
-          iniTreeWidget->loadFromFile(fileName);
-
-          // Switch to the DeviceParameters tab
-          for (int i = 0; i < tabWidget->count(); ++i)
+      // Switch to the DeviceParameters tab
+      for (int i = 0; i < tabWidget->count(); ++i)
+      {
+          if (tabWidget->tabText(i) == "DeviceParameters")
           {
-              if (tabWidget->tabText(i) == "DeviceParameters")
-              {
-                  tabWidget->setCurrentIndex(i);
-                  break;
-              }
+              tabWidget->setCurrentIndex(i);
+              break;
           }
+      }
   }
 }
 
@@ -390,7 +410,10 @@ void MainWindow::onServerStoped(const QString &lastCommand)
 
 void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString &lastCommand)
 {
-    m_crioDebugger->connectToDebugServer(crioViewTab->ipEdit()->ipAddress(),commandPort+1);
+    QString host     =  crioViewTab->ipEdit       () -> ipAddress();
+    QString login    =  crioViewTab->loginEdit    () -> text     ();
+    QString password =  crioViewTab->passwordEdit () -> text     ();
+    m_crioDebugger->connectToDebugServer(host,commandPort+1);
     // the server has started succesfully
     //keep track of the last command
     lastSshCommand =  lastCommand;
@@ -400,8 +423,20 @@ void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString
     moduleList.clear();
     //and get the module list, when the module list is executed sshCommand will trigger onModuleListRetrived signal with the output
     sshCommand->getModulesDefinitions();
+
+    globalTab->setHostName(host    );
+    globalTab->setUserName(login   );
+    globalTab->setPassword(password);
+    globalTab->start();
+
     fromStartServer = false;
     fromStopServer  = false;
+}
+
+void MainWindow::onAccessDenied(const QString &lastCommand)
+{
+    QMessageBox::information(nullptr, "Access denied", "Wrong login or password", QMessageBox::Ok);
+    crioViewTab->connectButton()->setEnabled(true);
 }
 
 void MainWindow::onCommandServerLogRequest(const QString &request)
