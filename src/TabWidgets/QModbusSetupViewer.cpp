@@ -67,9 +67,9 @@ QModbusSetupViewer::QModbusSetupViewer(QWidget *parent)
     // Create a form layout for the m_compatibilityLayerGroupBox
     QFormLayout *compatibilityLayout = new QFormLayout(m_compatibilityLayerGroupBox);
     compatibilityLayout->addRow("Compatibility Layer:", compatibilityLayerSwitch);
-    compatibilityLayout->addRow("Nb Analogs In:", nbAnalogsInLineEdit);
-    compatibilityLayout->addRow("Nb Analogs Out:", nbAnalogsOutLineEdit);
-    compatibilityLayout->addRow("Nb Counters:", nbCountersLineEdit);
+    compatibilityLayout->addRow("Nb Analogs In:"      , nbAnalogsInLineEdit);
+    compatibilityLayout->addRow("Nb Analogs Out:"     , nbAnalogsOutLineEdit);
+    compatibilityLayout->addRow("Nb Counters:"        , nbCountersLineEdit);
     m_compatibilityLayerGroupBox->setLayout(compatibilityLayout);
 
     // Create a layout for buttons
@@ -205,15 +205,15 @@ void QModbusSetupViewer::onModbusSimulationOrAcquisitionChanged()
     if (!m_isSimul)
     {
         // Create an information message box
-        QMessageBox infoBox;
-        infoBox.setIconPixmap(QPixmap(":/path/to/your/logo.png")); // Set the logo pixmap
-        infoBox.setWindowTitle("Work in Progress");
-        infoBox.setText("Come back soon,\nsoft returns in simulation now.");
-        infoBox.exec(); // Display the message box
-        simulateAcquisitionSwitch->blockSignals(true);
-        simulateAcquisitionSwitch->setState(false);
-        simulateAcquisitionSwitch->blockSignals(false);
-        simulateAcquisitionSwitch->update();
+       // QMessageBox infoBox;
+       // infoBox.setIconPixmap(QPixmap(":/path/to/your/logo.png")); // Set the logo pixmap
+       // infoBox.setWindowTitle("Work in Progress");
+       // infoBox.setText("Come back soon,\nsoft returns in simulation now.");
+       // infoBox.exec(); // Display the message box
+       // simulateAcquisitionSwitch->blockSignals(true);
+       // simulateAcquisitionSwitch->setState(false);
+       // simulateAcquisitionSwitch->blockSignals(false);
+       // simulateAcquisitionSwitch->update();
     }
     else
     {
@@ -246,7 +246,21 @@ void QModbusSetupViewer::onStartStopModbusChanged()
     }
     else
     {
-        //TODO
+        if (mustStartOrStop)
+        {
+            //must start
+            simulateAcquisitionSwitch->setEnabled(false);
+            simulateAcquisitionSwitch->update();
+            m_comControl->addLastCommand("Starting modbus acquisition on Crio");
+            m_tcpClient->sendStartModbusAcquisition();
+
+        }
+        else
+        {
+            //must stop
+             m_comControl->addLastCommand("Stopping modbus acquisition on Crio");
+             m_tcpClient->sendStopModbusAcquisition();
+        }
     }
 
 }
@@ -258,14 +272,14 @@ void QModbusSetupViewer::onSimulationStarted(const QString &response)
         m_nbAnalogics = nbAnalogsInLineEdit->text().toInt();
         compatibilityLayerSwitch->getState() ? m_exlogOffset = 1 : m_exlogOffset = 0;
         m_comControl->addLastOutput("Modbus server simulation on");
-        m_modbusSimTimer->start();
+        m_modbusTimer->start();
         m_modbusReading = true;
     }
     else if (response.contains("NACK"))
     {
         m_modbusReading = false;
-        m_modbusSimTimer->stop();
-        m_comControl->addLastError("Somthing gone wrong when trying to stop simulation:\n"+response);
+        m_modbusTimer->stop();
+        m_comControl->addLastError("Somthing gone wrong when trying to start simulation:\n"+response);
     }
 }
 
@@ -274,23 +288,63 @@ void QModbusSetupViewer::onSimulationStoped(const QString &response)
     if (response.contains("ACK"))
     {
         m_modbusReading = false;
-        m_modbusSimTimer->stop();
+        m_modbusTimer->stop();
         m_comControl->addLastOutput("Modbus server simulation off");
     }
     else if (response.contains("NACK"))
     {
         m_modbusReading = false;
-        m_modbusSimTimer->stop();
+        m_modbusTimer->stop();
         m_comControl->addLastError("Somthing gone wrong when trying to stop simulation:\n"+response);
     }
     simulateAcquisitionSwitch->setEnabled(true);
     simulateAcquisitionSwitch->update();
 }
 
-void QModbusSetupViewer::onSimulTimer()
+void QModbusSetupViewer::onAcquisitionStarted(const QString &response)
 {
-    m_modbusSimTimer->stop(); // Avoid reentry
+    qInfo()<<"Enter on acquisition started, response:"<<response;
+    //output is Enter on acquisition started, response: "ACK"
+    if (response.contains("ACK"))
+    {
 
+        m_nbAnalogics = nbAnalogsInLineEdit->text().toInt();
+        compatibilityLayerSwitch->getState() ? m_exlogOffset = 1 : m_exlogOffset = 0;
+        m_comControl->addLastOutput("Modbus server acquisition on");
+        m_modbusTimer->start();
+        qInfo()<<"timer is started";
+        m_modbusReading = true;
+    }
+    else if (response.contains("NACK"))
+    {
+        m_modbusReading = false;
+        m_modbusTimer->stop();
+        m_comControl->addLastError("Somthing gone wrong when trying to start acquisition:\n"+response);
+    }
+}
+
+void QModbusSetupViewer::onAcquisitionStoped(const QString &response)
+{
+    if (response.contains("ACK"))
+    {
+        m_modbusReading = false;
+        m_modbusTimer->stop();
+        m_comControl->addLastOutput("Modbus server acquisition off");
+    }
+    else if (response.contains("NACK"))
+    {
+        m_modbusReading = false;
+        m_modbusTimer->stop();
+        m_comControl->addLastError("Somthing gone wrong when trying to stop acquisition:\n"+response);
+    }
+    simulateAcquisitionSwitch->setEnabled(true);
+    simulateAcquisitionSwitch->update();
+}
+
+void QModbusSetupViewer::onModbusTimer()
+{
+    m_modbusTimer->stop(); // Avoid reentry
+    qInfo()<<"enter on modbus timer";
     QModbusReply *reply = m_modbusClient->readInputRegisters(1, m_exlogOffset, m_nbAnalogics);
     if (reply)
     {
@@ -299,7 +353,7 @@ void QModbusSetupViewer::onSimulTimer()
     else
     {
         // Handle the error or retry
-        if (m_modbusReading) m_modbusSimTimer->start();
+        if (m_modbusReading) m_modbusTimer->start();
     }
 }
 
@@ -325,7 +379,7 @@ void QModbusSetupViewer::processModbusReply()
     reply->deleteLater();
 
     // Reauthorize a new entry
-    if (m_modbusReading) m_modbusSimTimer->start();
+    if (m_modbusReading) m_modbusTimer->start();
 }
 
 
@@ -338,7 +392,7 @@ void QModbusSetupViewer::OnAnalogsDataReady(const QVector<quint16> &data)
     }
 
     //authorize a new entry
-    if (m_modbusReading) m_modbusSimTimer->start();
+    if (m_modbusReading) m_modbusTimer->start();
 }
 
 QModbusAnalogViewer *QModbusSetupViewer::analogsViewer() const
@@ -442,12 +496,12 @@ void QModbusSetupViewer::setAllValidators()
     QIntValidator *intValidator = new QIntValidator(0, 65535, this);
 
     coilsLineEdit->setValidator(intValidator);
-    discreteInputsLineEdit->setValidator(intValidator);
-    holdingRegistersLineEdit->setValidator(intValidator);
-    inputRegistersLineEdit->setValidator(intValidator);
-    nbAnalogsInLineEdit->setValidator(intValidator);
-    nbAnalogsOutLineEdit->setValidator(intValidator);
-    nbCountersLineEdit->setValidator(intValidator);
+    discreteInputsLineEdit   -> setValidator (intValidator) ;
+    holdingRegistersLineEdit -> setValidator (intValidator) ;
+    inputRegistersLineEdit   -> setValidator (intValidator) ;
+    nbAnalogsInLineEdit      -> setValidator (intValidator) ;
+    nbAnalogsOutLineEdit     -> setValidator (intValidator) ;
+    nbCountersLineEdit       -> setValidator (intValidator) ;
 
     // Port validator (1-65535)
     QIntValidator *portValidator = new QIntValidator(1, 65535, this);
@@ -459,8 +513,30 @@ void QModbusSetupViewer::setAllValidators()
 void QModbusSetupViewer::createTCPClient()
 {
     m_tcpClient    = new QtTcpClient("QModbusSetupViewer",this);
-    connect (m_tcpClient, &QtTcpClient::simulationStartedSignal, this, &QModbusSetupViewer::onSimulationStarted , Qt::QueuedConnection);
-    connect (m_tcpClient, &QtTcpClient::simulationStopedSignal , this, &QModbusSetupViewer::onSimulationStoped  , Qt::QueuedConnection);
+
+    connect (m_tcpClient,
+             &QtTcpClient::simulationStartedSignal     ,
+             this                                      ,
+             &QModbusSetupViewer::onSimulationStarted  ,
+             Qt::QueuedConnection)                     ;
+
+    connect (m_tcpClient                               ,
+             &QtTcpClient::simulationStopedSignal      ,
+             this                                      ,
+             &QModbusSetupViewer::onSimulationStoped   ,
+             Qt::QueuedConnection)                     ;
+
+    connect (m_tcpClient                               ,
+             &QtTcpClient::acquisitionStartedSignal    ,
+             this                                      ,
+             &QModbusSetupViewer::onAcquisitionStarted ,
+             Qt::QueuedConnection)                     ;
+
+    connect (m_tcpClient                               ,
+             &QtTcpClient::acquisitionStopedSignal    ,
+             this                                      ,
+             &QModbusSetupViewer::onAcquisitionStoped  ,
+             Qt::QueuedConnection)                     ;
 }
 
 void QModbusSetupViewer::createSectionGroupBoxes(QGroupBox *parentGroupBox)
@@ -485,9 +561,9 @@ void QModbusSetupViewer::createLoadSaveUploadButtons(QGroupBox *parentGroupBox)
 
 void QModbusSetupViewer::createSimulTimer()
 {
-    m_modbusSimTimer = new QTimer(this);
-    m_modbusSimTimer->setInterval(1000);//1 sec acquisition time
-    connect (m_modbusSimTimer, &QTimer::timeout, this,&QModbusSetupViewer::onSimulTimer);
+    m_modbusTimer = new QTimer(this);
+    m_modbusTimer->setInterval(1000);//1 sec acquisition time
+    connect (m_modbusTimer, &QTimer::timeout, this,&QModbusSetupViewer::onModbusTimer);
 }
 
 void QModbusSetupViewer::setUpLayout()

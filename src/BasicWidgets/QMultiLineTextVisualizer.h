@@ -21,7 +21,7 @@ public:
     void addLastOutput(const QString &lastOutput);
     void addLastError(const QString &lastError);
     void appendTextWithColor(const QString &text, const QColor &color, const bool skipLine);
-
+    void saveRawText(const QString &fileName);
 
 public slots:
     void clearText();

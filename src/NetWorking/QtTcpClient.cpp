@@ -9,16 +9,18 @@
  * @details
  * - Initializes the QtTcpClient object with a new QTcpSocket.
  * - Connects the QTcpSocket signals (connected, readyRead, and errorOccurred) to the respective slots in this class:
- *   - The 'connected' signal is connected to the 'onConnected' slot. This signal is emitted by QTcpSocket when it successfully establishes a connection with the server. The 'onConnected' slot is used to handle tasks that should occur once the connection is established, such as logging the connection status.
- *   - The 'readyRead' signal is connected to the 'onDataReceived' slot. This signal is emitted whenever there is data available to be read from the socket. The 'onDataReceived' slot handles the reading and processing of this data, which typically includes server responses to client requests.
- *   - The 'errorOccurred' signal is connected to the 'displayError' slot. This signal is emitted when a socket error occurs during operations like connecting, sending, or receiving data. The 'displayError' slot is used to handle and log these errors for debugging and user notification purposes.
+ *   - The 'connected' signal is connected to the 'onConnected' slot. This signal is Q_EMITted by QTcpSocket when it successfully establishes a connection with the server. The 'onConnected' slot is used to handle tasks that should occur once the connection is established, such as logging the connection status.
+ *   - The 'readyRead' signal is connected to the 'onDataReceived' slot. This signal is Q_EMITted whenever there is data available to be read from the socket. The 'onDataReceived' slot handles the reading and processing of this data, which typically includes server responses to client requests.
+ *   - The 'errorOccurred' signal is connected to the 'displayError' slot. This signal is Q_EMITted when a socket error occurs during operations like connecting, sending, or receiving data. The 'displayError' slot is used to handle and log these errors for debugging and user notification purposes.
  */
 QtTcpClient::QtTcpClient(QString clientName, QObject *parent) : QObject(parent), socket(new QTcpSocket(this))
 {
     this->setObjectName(clientName);
     connect(socket, &QTcpSocket::connected, this, &QtTcpClient::onConnected);
     connect(socket, &QTcpSocket::readyRead, this, &QtTcpClient::onDataReceived);
-    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred), this, &QtTcpClient::displayError);
+    connect(socket, QOverload<QAbstractSocket::SocketError>::of(&QTcpSocket::errorOccurred),
+                    this,
+                    &QtTcpClient::displayError);
 }
 
 /**
@@ -97,7 +99,7 @@ void QtTcpClient::sendReadCurrentRequest(const QString &moduleAlias, unsigned in
     }
     else
     {
-        emit socketNotConnectedSignal("NACK: socket not connected");
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
@@ -126,7 +128,7 @@ void QtTcpClient::sendReadVoltageRequest(const QString &moduleAlias, unsigned in
     }
     else
     {
-        emit socketNotConnectedSignal("NACK: socket not connected");
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
@@ -152,7 +154,7 @@ void QtTcpClient::sendStartModbusSimulation()
     }
     else
     {
-        emit socketNotConnectedSignal("NACK: socket not connected");
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
@@ -167,7 +169,37 @@ void QtTcpClient::sendStopSimulation()
     }
     else
     {
-        emit socketNotConnectedSignal("NACK: socket not connected");
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
+    }
+}
+
+void QtTcpClient::sendStartModbusAcquisition()
+{
+    if (checkConnect(m_host, m_port))
+    {
+        QString request = "startModbusAcquisition";
+        m_lastRequest = request;
+        socket->write(request.toUtf8());
+        socket->waitForBytesWritten();
+    }
+    else
+    {
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
+    }
+}
+
+void QtTcpClient::sendStopModbusAcquisition()
+{
+    if (checkConnect(m_host, m_port))
+    {
+        QString request = "stopModbusAcquisition";
+        m_lastRequest = request;
+        socket->write(request.toUtf8());
+        socket->waitForBytesWritten();
+    }
+    else
+    {
+        Q_EMIT socketNotConnectedSignal("NACK: socket not connected");
     }
 }
 
@@ -181,7 +213,7 @@ void QtTcpClient::setHost(const QString &newHost)
     if (m_host == newHost)
         return;
     m_host = newHost;
-    emit hostChanged();
+    Q_EMIT hostChanged();
 }
 
 quint16 QtTcpClient::port() const
@@ -194,7 +226,7 @@ void QtTcpClient::setPort(quint16 newPort)
     if (m_port == newPort)
         return;
     m_port = newPort;
-    emit portChanged();
+    Q_EMIT portChanged();
 }
 
 /**
@@ -214,34 +246,43 @@ void QtTcpClient::onConnected()
  *
  * @details
  * - Reads and processes the response from the server.
- * - If the response contains "NACK", an error signal is emitted.
- * - Otherwise, based on the last request type, the appropriate signal (currentReadedSignal or voltageReadedSignal) is emitted.
+ * - If the response contains "NACK", an error signal is Q_EMITted.
+ * - Otherwise, based on the last request type, the appropriate signal (currentReadedSignal or voltageReadedSignal) is Q_EMITted.
  */
 void QtTcpClient::onDataReceived()
 {
     QString response = QString::fromUtf8(socket->readAll());
     if (response.contains("NACK"))
     {
-        emit errorSignal(response);
+        Q_EMIT errorSignal(response);
         qDebug() << "Error from server:" << response;
         return;
     }
     else if (m_lastRequest == "readCurrent")
     {
-        emit currentReadedSignal(response);
+        Q_EMIT currentReadedSignal(response);
     }
     else if (m_lastRequest == "readVoltage")
     {
-       emit voltageReadedSignal(response);
+       Q_EMIT voltageReadedSignal(response);
     }
     else if (m_lastRequest == "startModbusSimulation")
     {
-        emit simulationStartedSignal(response);
+        Q_EMIT simulationStartedSignal(response);
     }
     else if (m_lastRequest == "stopModbusSimulation")
     {
-        emit simulationStopedSignal(response);
+        Q_EMIT simulationStopedSignal(response);
     }
+    else if (m_lastRequest == "startModbusAcquisition")
+    {
+        Q_EMIT acquisitionStartedSignal(response);
+    }
+    else if (m_lastRequest == "stopModbusAcquisition")
+    {
+        Q_EMIT acquisitionStopedSignal(response);
+    }
+
 
 
   //  qDebug() << "Response to " << m_lastRequest<< "from server:" << response;

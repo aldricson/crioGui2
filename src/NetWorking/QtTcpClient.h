@@ -8,14 +8,16 @@
 class QtTcpClient : public QObject {
     Q_OBJECT
 public:
-    explicit QtTcpClient           (QString clientName,QObject *parent = nullptr);
-    void connectToServer           (const QString &host, quint16 port, const QString &message);
-    void disconnectFromServer();
-    bool checkConnect              (const QString &host, quint16 port);
-    void sendReadCurrentRequest    (const QString &moduleAlias, unsigned int channelIndex);
-    void sendReadVoltageRequest    (const QString &moduleAlias, unsigned int channelIndex);
-    void sendStartModbusSimulation ();
-    void sendStopSimulation        ();
+    explicit QtTcpClient            (QString clientName,QObject *parent = nullptr);
+    void connectToServer            (const QString &host, quint16 port, const QString &message);
+    void disconnectFromServer       ()                                                         ;
+    bool checkConnect               (const QString &host, quint16 port)                        ;
+    void sendReadCurrentRequest     (const QString &moduleAlias, unsigned int channelIndex)    ;
+    void sendReadVoltageRequest     (const QString &moduleAlias, unsigned int channelIndex)    ;
+    void sendStartModbusSimulation  ()                                                         ;
+    void sendStopSimulation         ()                                                         ;
+    void sendStartModbusAcquisition ()                                                         ;
+    void sendStopModbusAcquisition  ()                                                         ;
 
     const QString &host() const;
     void setHost(const QString &newHost);
@@ -38,12 +40,14 @@ private slots:
     void displayError(QAbstractSocket::SocketError socketError);
 
 signals:
-    void currentReadedSignal     (const QString &response);
-    void voltageReadedSignal     (const QString &response);
-    void errorSignal             (const QString &response);
-    void socketNotConnectedSignal(const QString &response);
-    void simulationStartedSignal (const QString &response);
-    void simulationStopedSignal  (const QString &response);
+    void currentReadedSignal      (const QString &response);
+    void voltageReadedSignal      (const QString &response);
+    void errorSignal              (const QString &response);
+    void socketNotConnectedSignal (const QString &response);
+    void simulationStartedSignal  (const QString &response);
+    void simulationStopedSignal   (const QString &response);
+    void acquisitionStartedSignal (const QString &response);
+    void acquisitionStopedSignal  (const QString &response);
 
     void hostChanged();
     void portChanged();

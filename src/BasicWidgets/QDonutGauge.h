@@ -13,6 +13,8 @@ class QDonutGauge : public QWidget
     Q_PROPERTY(double  min               READ min               WRITE setMin               NOTIFY minChanged)
     Q_PROPERTY(double  max               READ max               WRITE setMax               NOTIFY maxChanged)
     Q_PROPERTY(bool    clockwiseRotation READ clockwiseRotation WRITE setClockwiseRotation NOTIFY clockwiseRotationChanged)
+    Q_PROPERTY(QString suffix            READ getSuffix         WRITE setSuffix            NOTIFY suffixChanged)
+
 public:
     enum StartingPoint { Top, Right, Bottom, Left };
     Q_ENUM(StartingPoint)
@@ -62,7 +64,6 @@ private:
     void loadStyleStringFromResource();
 
 
-    Q_PROPERTY(QString suffix READ getSuffix WRITE setSuffix NOTIFY suffixChanged)
 };
 
 #endif // QDONUTGAUGE_H

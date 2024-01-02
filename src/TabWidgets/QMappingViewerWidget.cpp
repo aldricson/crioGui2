@@ -3,14 +3,18 @@
 #include <QLabel>
 #include <QScrollBar>
 #include <QPushButton>
+#include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QMultiLineTextVisualizer.h"
 #include "TabWidgetFundations/ModbusMaping/QMappingRowWidget.h"
+#include "TabWidgetFundations/ModbusMaping/QBackUpWidget.h"
 
 
 QMappingViewerWidget::QMappingViewerWidget(QString modbusMappingPath, QCrioModulesDataExtractor *moduleExtractor, QWidget *parent)
     : QWidget(parent), selectedRow(nullptr)
 {
     m_extractor = moduleExtractor;
+    sshCommand  = new QSSHCommand(this);
+    connect (sshCommand, &QSSHCommand::modbusMappingUploadedSignal, this, &QMappingViewerWidget::onModbusMappingUploaded, Qt::QueuedConnection );
     m_modbusMappingPath = modbusMappingPath;
     setupUi();
     loadStyleStringFromResource();
@@ -50,10 +54,11 @@ void QMappingViewerWidget::setupUi()
     reloadBtn = new QPushButton("(Re)Load", this);
     connect (reloadBtn, &QPushButton::clicked, this, &QMappingViewerWidget::onLoad);
 
-    saveBtn = new QPushButton("Save", this); // Placeholder button
+    saveBtn = new QPushButton("Save", this);
     connect(saveBtn, &QPushButton::clicked, this, &QMappingViewerWidget::onSave);
 
-    uploadBtn = new QPushButton("Upload", this); // Placeholder button
+    uploadBtn = new QPushButton("Upload", this);
+    connect(uploadBtn, &QPushButton::clicked, this, &QMappingViewerWidget::onUpload);
 
     // Create a horizontal layout for the buttons
     QHBoxLayout *buttonsLayout = new QHBoxLayout();
@@ -72,16 +77,18 @@ void QMappingViewerWidget::setupUi()
     scrollArea->setWidgetResizable(true);
 
     csvVizualizer = new QMultiLineTextVisualizer(this);
+    backuWidget   = new QBackUpWidget(this);
 
     // Layout for the whole widget, including buttons and the scroll area
     QGridLayout *mainLayout = new QGridLayout(this);
     // Ensure the layout does not have extra space that expands
-    mainLayout->addWidget(scrollArea    ,0,0,1,1);
+    mainLayout->addWidget(scrollArea    ,0,0,1,2);
 
-    mainLayout->addWidget(btnContainer  ,2,0,1,1); // Add buttons layout at the bottom
+    mainLayout->addWidget(btnContainer  ,2,0,1,2); // Add buttons layout at the bottom
 
     setLayout(mainLayout);
     mainLayout->addWidget(csvVizualizer ,1,0,1,1);
+    mainLayout->addWidget(backuWidget   ,1,1,1,1);
 }
 
 
@@ -156,6 +163,11 @@ void QMappingViewerWidget::onAdd()
     updateRowIndices();
 }
 
+void QMappingViewerWidget::onModbusMappingUploaded(const QString &output, const QString &lastCommand)
+{
+ //TODO
+}
+
 void QMappingViewerWidget::onLoad()
 {
     QString fileName = m_modbusMappingPath + "mapping.csv";
@@ -207,12 +219,157 @@ void QMappingViewerWidget::onLoad()
 
         });
     }
+    QString destinationFolder   = m_modbusMappingPath + "Backups/";
+    backuWidget->analyzeFolder(destinationFolder);
 }
+
+bool QMappingViewerWidget::checkAllBeforeLoad(const QStringList& lines)
+{
+    if (!validateIndices(lines)) return false;
+    for (const QString& line : lines)
+    {
+        if (!checkLineFormat(line)) return false;
+        if (!checkLineFields(line)) return false;
+        // Add more checks as needed
+    }
+    return true;
+}
+
+bool QMappingViewerWidget::checkLineFormat(const QString& line)
+{
+    // The expected format is: index;moduleType;moduleAlias;moduleChannel;minSrc;maxSrc;minDest;maxDest;destChannel
+    // Total of 9 fields separated by semicolons
+    int expectedFieldCount = 9;
+    QStringList fields = line.split(";");
+    if (fields.count() != expectedFieldCount) {
+        // If the number of fields is not as expected, the format is incorrect
+        return false;
+    }
+    return true;
+}
+
+bool QMappingViewerWidget::checkLineFields(const QString& line)
+{
+    // Field specifications:
+    // 0: index (integer)
+    // 1: moduleType (integer, index in an enum)
+    // 2: moduleAlias (string)
+    // 3: moduleChannel (string)
+    // 4, 5: minSrc, maxSrc (double)
+    // 6, 7: minDest, maxDest (u_int16_t)
+    // 8: destChannel (integer)
+
+    QStringList fields = line.split(";");
+
+    // Check index field (integer)
+    bool indexOk;
+    fields[0].toInt(&indexOk);
+    if (!indexOk) return false;
+
+    // Check moduleType (integer)
+    bool moduleTypeOk;
+    fields[1].toInt(&moduleTypeOk);
+    if (!moduleTypeOk) return false;
+
+    // moduleAlias and moduleChannel are strings, any value is valid
+
+    // Check minSrc, maxSrc (double)
+    bool doubleOk;
+    for (int i = 4; i <= 5; ++i) {
+        fields[i].toDouble(&doubleOk);
+        if (!doubleOk) return false;
+    }
+
+    // Check minDest, maxDest (u_int16_t)
+    bool uInt16Ok;
+    for (int i = 6; i <= 7; ++i) {
+        fields[i].toUShort(&uInt16Ok);
+        if (!uInt16Ok) return false;
+    }
+
+    // Check destChannel (integer)
+    bool destChannelOk;
+    fields[8].toInt(&destChannelOk);
+    if (!destChannelOk) return false;
+
+    return true;
+}
+
+
+bool QMappingViewerWidget::validateIndices(const QStringList &lines)
+{
+    // This function checks if the index field in each line is:
+    // 1. Unique
+    // 2. Starts with 0
+    // 3. Strictly increments by 1
+
+    QSet<int> indices; // To store unique indices
+    int expectedIndex = 0; // Start with 0 and increment
+
+    for (const QString &line : lines) {
+        QStringList fields = line.split(";");
+
+        // Parse index
+        bool ok;
+        int index = fields[0].toInt(&ok);
+        if (!ok) return false; // Fail if index is not an integer
+
+        // Check if index matches the expected value
+        if (index != expectedIndex) return false;
+
+        // Check for uniqueness
+        if (indices.contains(index)) return false;
+        indices.insert(index);
+
+        // Increment expected index for next iteration
+        expectedIndex++;
+    }
+
+    return true;
+}
+
+
 
 void QMappingViewerWidget::onSave()
 {
-    checkFields();
+    m_saveSuccess=true;
+    if (checkAllBeforeSave())
+    {
+        qInfo()<<"all fields are checked";
+        csvVizualizer->clear();
+        bool ok;
+        int clrCode;
+        for (int i=0;i<rowWidgets.count();++i)
+        {
+            auto row = rowWidgets[i];
+            QString csvLine = row->getCsvLine(ok);
+            qInfo()<<csvLine;
+            if (ok)
+            {
+                i%2==0 ? clrCode=0x87CEEB : clrCode=0x00BFFF;
+                csvVizualizer->appendTextWithColor(csvLine,QColor(clrCode),false);
+            }
+        }
+        backUpFile();
+        csvVizualizer->saveRawText(m_modbusMappingPath + "mapping.csv");
+    }
+    else
+    {
+        m_saveSuccess=false;
+        //TODO
+    }
 }
+
+void QMappingViewerWidget::onUpload()
+{
+  onSave();
+  if (!m_saveSuccess)
+  {
+      return;
+  }
+  sshCommand->uploadMappingSetup(m_modbusMappingPath);
+}
+
 
 
 void QMappingViewerWidget::onSelectRow(QMappingRowWidget *row)
@@ -333,12 +490,12 @@ void QMappingViewerWidget::blockAllSignals(bool blocked)
         auto row = rowWidgets[i];
         row->blockAllSignals(blocked);
     }
-    insertBeforeBtn ->blockSignals(blocked);
-    insertAfterBtn  ->blockSignals(blocked);
-    addBtn          ->blockSignals(blocked);
-    reloadBtn       ->blockSignals(blocked);
-    saveBtn         ->blockSignals(blocked);
-    uploadBtn       ->blockSignals(blocked);
+    insertBeforeBtn -> blockSignals (blocked);
+    insertAfterBtn  -> blockSignals (blocked);
+    addBtn          -> blockSignals (blocked);
+    reloadBtn       -> blockSignals (blocked);
+    saveBtn         -> blockSignals (blocked);
+    uploadBtn       -> blockSignals (blocked);
 }
 
 void QMappingViewerWidget::enableAllControls(bool enabled)
@@ -349,71 +506,216 @@ void QMappingViewerWidget::enableAllControls(bool enabled)
         row->enableAllControls(enabled);
     }
 
-    insertBeforeBtn ->setEnabled(enabled);
-    insertAfterBtn  ->setEnabled(enabled);
-    addBtn          ->setEnabled(enabled);
-    reloadBtn       ->setEnabled(enabled);
-    saveBtn         ->setEnabled(enabled);
-    uploadBtn       ->setEnabled(enabled);
+    insertBeforeBtn -> setEnabled (enabled);
+    insertAfterBtn  -> setEnabled (enabled);
+    addBtn          -> setEnabled (enabled);
+    reloadBtn       -> setEnabled (enabled);
+    saveBtn         -> setEnabled (enabled);
+    uploadBtn       -> setEnabled (enabled);
 }
 
-bool QMappingViewerWidget::checkFields()
+bool QMappingViewerWidget::checkAllBeforeSave()
 {
-    bool result = true;
+    bool result[] = {true,true,true,true};
+    result[0]     = checkRowsForEmptyLineEdits ();
+    result[1]     = checkRowsMinMax            ();
+    result[2]     = chekRowsForEmptyComboboxes ();
+    result[3]     = checkforModulesTypesIsNotAll();
+
+    return result[0] && result[1] && result [2] && result[3];
+}
+
+
+
+bool QMappingViewerWidget::checkRowsForEmptyLineEdits()
+{
+    bool result[] = {true,true,true,true,true};
     for (int i=0;i<rowWidgets.count();++i)
     {
         auto row = rowWidgets[i];
         if (row)
         {
-            QTimer::singleShot(50,this,[row]{row->blockAllSignals(true);});
-
-            if (row->destChannelLE()->text().isEmpty())
-            {
-                row->destChannelLE()->setProperty("inError", true);
-                result = false;
-            }
-            else
-            {
-                row->destChannelLE()->setProperty("inError", false);
-            }
-
-            row->destChannelLE()->style()->unpolish(row->destChannelLE());
-            row->destChannelLE()->style()->polish(row->destChannelLE());
-            row->destChannelLE()->update();
-
-            if (row->maxDestLE()->text().isEmpty())
-            {
-                row->maxDestLE()->setProperty("inError", true);
-                result = false;
-            }
-            else
-            {
-                row->maxDestLE()->setProperty("inError", false);
-            }
-
-            row->maxDestLE()->style()->unpolish(row->maxDestLE());
-            row->maxDestLE()->style()->polish(row->maxDestLE());
-            row->maxDestLE()->update();
-
-            if (row->minDestLE()->text().isEmpty())
-            {
-                row->minDestLE()->setProperty("inError", true);
-                result = false;
-            }
-            else
-            {
-                row->minDestLE()->setProperty("inError", false);
-            }
-
-            row->minDestLE()->style()->unpolish(row->minDestLE());
-            row->minDestLE()->style()->polish(row->minDestLE());
-            row->minDestLE()->update();
-
-            QTimer::singleShot(50,this,[row]{row->blockAllSignals(false);});
+            result[0] = checkIfALineEditIsEmpty (row -> destChannelLE ());
+            result[1] = checkIfALineEditIsEmpty (row -> maxDestLE     ());
+            result[2] = checkIfALineEditIsEmpty (row -> minDestLE     ());
+            result[3] = checkIfALineEditIsEmpty (row -> maxSrcValueLE ());
+            result[4] = checkIfALineEditIsEmpty (row -> minSrcValueLE ());
         }
     }
+    return result[0] && result[1] && result[2] && result [3] && result [4];
+}
+
+
+bool QMappingViewerWidget::checkIfALineEditIsEmpty(QLineEdit *aLineEdit)
+{
+    bool result = !(aLineEdit->text().isEmpty());
+    aLineEdit->setProperty("inError",!result);
+
+    aLineEdit->style()->unpolish(aLineEdit);
+    aLineEdit->style()->polish  (aLineEdit);
+    aLineEdit->update();
     return result;
 }
+
+
+
+bool QMappingViewerWidget::checkRowsMinMax()
+{
+    bool result[] = {true,true};
+    for (int i=0;i<rowWidgets.count();++i)
+    {
+        auto row = rowWidgets[i];
+        if (row)
+        {
+            result[0] = checkForMinMaxConsistency(row->minDestLE    (),row->maxDestLE    ());
+            result[1] = checkForMinMaxConsistency(row->minSrcValueLE(),row->maxSrcValueLE());
+
+        }
+    }
+    return result[0] && result[1];
+}
+
+
+bool QMappingViewerWidget::checkForMinMaxConsistency(QLineEdit *minLE, QLineEdit *maxLE)
+{
+    bool check[] ={true,true};
+    bool result;
+    check[0] = checkIfALineEditIsEmpty(maxLE);
+    check[1] = checkIfALineEditIsEmpty(minLE);
+    check[0] && check[1] ? minLE>=maxLE ?  result = false : result = true : result = false;
+    if (!result)
+    {
+          maxLE->setProperty("inError", true);
+          minLE->setProperty("inError", true);
+    }
+    else
+    {
+        maxLE->setProperty("inError", false);
+        minLE->setProperty("inError", false);
+    }
+
+    return result;
+}
+
+bool QMappingViewerWidget::chekRowsForEmptyComboboxes()
+{
+    bool result[] = {true,true,true};
+    for (int i=0;i<rowWidgets.count();++i)
+    {
+        auto row = rowWidgets[i];
+        if (row)
+        {
+            result[0] = checkIfAComboboxIsEmpty(row->moduleTypeCB());
+            result[1] = checkIfAComboboxIsEmpty(row->moduleAliasCB());
+            result[2] = checkIfAComboboxIsEmpty(row->moduleChannelCB());
+        }
+    }
+    return result[0] && result[1] && result[2];
+
+}
+
+bool QMappingViewerWidget::checkIfAComboboxIsEmpty(QComboBox *aComboBox)
+{
+    bool result;
+    result = !(aComboBox->currentText().isEmpty() || aComboBox->count() == 0);
+    aComboBox->setProperty("inError",!result);
+    aComboBox->style()->unpolish(aComboBox);
+    aComboBox->style()->polish  (aComboBox);
+    aComboBox->update();
+    return result;
+}
+
+bool QMappingViewerWidget::checkforModulesTypesIsNotAll()
+{
+    bool result      = true;
+    bool finalResult = true;
+    for (int i=0;i<rowWidgets.count();++i)
+    {
+        auto row = rowWidgets[i];
+        if (row)
+        {
+            //QTimer::singleShot(50,this,[row]{row->blockAllSignals(true);});
+            result =  row->moduleTypeCB()->currentText() != "all";
+            row->moduleTypeCB()->setProperty("inError" , !result);
+            row->moduleTypeCB()->style()->unpolish(row->moduleTypeCB());
+            row->moduleTypeCB()->style()->polish  (row->moduleTypeCB());
+            row->moduleTypeCB()->update();
+            finalResult &= result;
+            //QTimer::singleShot(50,this,[row]{row->blockAllSignals(false);});
+        }
+    }
+    return finalResult;
+}
+
+void QMappingViewerWidget::backUpFile()
+{
+    // Setup source and destination
+    QDateTime now = QDateTime::currentDateTime();
+    QString formatedDate        = now.toString("dd_MM_yyyy_hh_mm_ss_");
+    QString SourcefileName      = m_modbusMappingPath + "mapping.csv";
+    QString destinationFolder   = m_modbusMappingPath + "Backups/";
+    QString DestinationFileName = destinationFolder + formatedDate + "mapping.csv";
+    // Verify if the backup folder exists and create it if not
+    QDir dir(destinationFolder);
+    if (!dir.exists())
+    {
+        dir.mkpath(destinationFolder); // Create the directory if it doesn't exist
+    }
+    // Copy the file from the source to the destination
+    QFile::copy(SourcefileName, DestinationFileName);
+}
+
+const QString &QMappingViewerWidget::passWord() const
+{
+    return m_passWord;
+}
+
+void QMappingViewerWidget::setPassWord(const QString &newPassWord)
+{
+    m_passWord = newPassWord;
+    sshCommand->setPassword(m_passWord);
+    emit passWordChanged();
+}
+
+const QString &QMappingViewerWidget::login() const
+{
+    return m_login;
+}
+
+void QMappingViewerWidget::setLogin(const QString &newLogin)
+{
+    m_login = newLogin;
+    sshCommand->setUserName(m_login);
+    emit loginChanged();
+}
+
+int QMappingViewerWidget::port() const
+{
+    return m_port;
+}
+
+void QMappingViewerWidget::setPort(int newPort)
+{
+    m_port = newPort;
+    sshCommand->setPortNum(m_port);
+    emit portChanged();
+}
+
+const QString &QMappingViewerWidget::hostName() const
+{
+    return m_hostName;
+}
+
+void QMappingViewerWidget::setHostName(const QString &newHostName)
+{
+    m_hostName = newHostName;
+    sshCommand->setHostName(m_hostName);
+    emit hostNameChanged();
+}
+
+
+
+
 
 
 void QMappingViewerWidget::loadStyleStringFromResource()
@@ -430,5 +732,6 @@ void QMappingViewerWidget::loadStyleStringFromResource()
 
         this->scrollArea->verticalScrollBar()->setStyleSheet(content);
 }
+
 
 

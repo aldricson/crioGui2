@@ -429,6 +429,10 @@ void MainWindow::onServerStartSuccesfull(const int &screenSession, const QString
     globalTab->setPassword(password);
     globalTab->start();
 
+    modbusMappingViewer->setHostName(host );
+    modbusMappingViewer->setLogin(login );
+    modbusMappingViewer->setPassWord(password );
+
     fromStartServer = false;
     fromStopServer  = false;
 }

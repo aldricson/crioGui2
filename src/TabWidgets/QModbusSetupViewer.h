@@ -69,9 +69,11 @@ private slots:
     void onExlogCompatibilityChanged              ()                                ;
     void onModbusSimulationOrAcquisitionChanged   ()                                ;
     void onStartStopModbusChanged                 ()                                ;
+    void onModbusTimer                             ()                                ;
     void onSimulationStarted                      (const QString          &response);
     void onSimulationStoped                       (const QString          &response);
-    void onSimulTimer                             ()                                ;
+    void onAcquisitionStarted                     (const QString          &response);
+    void onAcquisitionStoped                      (const QString          &response);
     void OnAnalogsDataReady                       (const QVector<quint16> &data    );
 
 signals:
@@ -112,7 +114,7 @@ private:
     QtTcpClient                *m_tcpClient                  = nullptr;
     QMultiLineTextVisualizer   *m_comControl                 = nullptr;
     QMultiLineTextVisualizer   *m_debugOutput                = nullptr;
-    QTimer                     *m_modbusSimTimer             = nullptr;
+    QTimer                     *m_modbusTimer                = nullptr;
     QString                    m_host                                 ;
     quint16                    m_port                                 ;
     int                        m_nbAnalogics                 = 0      ;

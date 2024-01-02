@@ -49,6 +49,7 @@ public:
     void downloadModulesDefinitions (QString params)             ;
     void downloadModbusSetup        (QString iniModbusSetupPath) ;
     void downloadMappingSetup       (QString modbusMappingPath)  ;
+    void uploadMappingSetup         (QString modbusMappingPath)  ;
     void isServerRunning            ()                           ;
     void listFolder                 (QString path)               ;
     void startServer                ()                           ;
@@ -72,6 +73,7 @@ signals:
     void moduleDownloadedSignal      ( const QString &output        , const QString &lastCommand );
     void modbusSetupDownloadedSignal ( const QString &output        , const QString &lastCommand );
     void modbusMappingLoadedSignal   ( const QString &output        , const QString &lastCommand );
+    void modbusMappingUploadedSignal ( const QString &output        , const QString &lastCommand );
     void totalCPUSignal              ( const QString &output        , const QString &lastCommand );
     void dataDrillCpuSignal          ( const QString &output        , const QString &lastCommand );
     void dataDrillTotalHDDSignal     ( const QString &output        , const QString &lastCommand );

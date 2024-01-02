@@ -1,10 +1,10 @@
 QComboBox {
     border: 1px solid #BA55D3;
     border-radius: 6px;
-	padding: 3px;
+    padding: 3px;
     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.1,
                                       stop: 0 #757575, stop: 1 #000000);
-	color:#D3D3D3;
+    color:#D3D3D3;
 }
 
 QComboBox::down-arrow {
@@ -25,3 +25,10 @@ QComboBox::down-arrow:on { /* shift the arrow when popup is open */
     top: 1px;
     left: 1px;
 }
+
+QComboBox[inError="true"] {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.5, stop: 0 #FFA07A, stop: 1 #DC143C);
+    color:black;
+}
+
+

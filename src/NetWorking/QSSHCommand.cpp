@@ -107,6 +107,10 @@ void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
     {
         Q_EMIT modbusMappingLoadedSignal(output, lastCommand);
     }
+    else if (lastCommand == "uploadModbusMapping")
+    {
+       Q_EMIT modbusMappingUploadedSignal(output, lastCommand);
+    }
     // Handling 'serverState' command - used to check the state of the server.
     else if (lastCommand == "serverState")
     {
@@ -301,6 +305,20 @@ void QSSHCommand::downloadMappingSetup(QString modbusMappingPath)
     {
         //TODO
     }
+}
+
+void QSSHCommand::uploadMappingSetup(QString modbusMappingPath)
+{
+    if (!m_withLibSSH2)
+    {
+        QString params = modbusMappingPath+"mapping.csv /home/dataDrill/mapping.csv";
+        sendCommand("uploadModbusMapping", params);
+    }
+    else
+    {
+        //TODO
+    }
+
 }
 
 void QSSHCommand::isServerRunning()

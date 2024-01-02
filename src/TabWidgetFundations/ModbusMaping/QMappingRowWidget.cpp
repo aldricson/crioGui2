@@ -56,9 +56,10 @@ QComboBox *QMappingRowWidget::moduleTypeCB() const
 
 void QMappingRowWidget::setModuleTypeCB(QComboBox *newModuleTypeCB)
 {
-    if (m_moduleTypeCB == newModuleTypeCB)
-        return;
+
     m_moduleTypeCB = newModuleTypeCB;
+    m_moduleTypeCB->setProperty("isCategory", true);
+    m_moduleTypeCB->setProperty("inError"   , false);
     emit moduleTypeCBChanged();
 }
 
@@ -379,6 +380,9 @@ void QMappingRowWidget::createUi()
 
 
     m_moduleTypeCB    = new QComboBox (this);
+    m_moduleTypeCB->setProperty("isCategory", true);
+    m_moduleTypeCB->setProperty("inError"   , false);
+
     QStringList items = EnumHelper::toStringList<globalEnumSpace::ModuleType>();
     items<<"all";
     m_moduleTypeCB->blockSignals(true);
@@ -437,8 +441,8 @@ void QMappingRowWidget::createLayout()
 
 void QMappingRowWidget::connectAll()
 {
-    connect (m_moduleTypeCB  , &QComboBox::currentIndexChanged , this, &QMappingRowWidget::onModuleTypeChanged);
-    connect (m_moduleAliasCB , &QComboBox::activated           , this, &QMappingRowWidget::onModuleAliasChanged);
+    connect (m_moduleTypeCB  , &QComboBox::activated , this, &QMappingRowWidget::onModuleTypeChanged);
+    connect (m_moduleAliasCB , &QComboBox::activated , this, &QMappingRowWidget::onModuleAliasChanged);
     connect (m_delBtn        , &QPushButton::clicked , this, [this](){Q_EMIT deleteRowSignal   (this);});
     connect (m_upBtn         , &QPushButton::clicked , this, [this](){Q_EMIT moveUpRowSignal   (this);});
     connect (m_downBtn       , &QPushButton::clicked , this, [this](){Q_EMIT moveDownRowSignal (this);});

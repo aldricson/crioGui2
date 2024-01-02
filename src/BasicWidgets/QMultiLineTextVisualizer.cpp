@@ -64,3 +64,17 @@ void QMultiLineTextVisualizer::appendTextWithColor(const QString &text, const QC
     append(coloredText);
     if(skipLine) append("");
 }
+
+void QMultiLineTextVisualizer::saveRawText(const QString &fileName)
+{
+    // Get the plain text from the QTextBrowser
+    QString plainText = this->toPlainText();
+    // Now you can save this plain text to a file or use it as needed
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text))
+    {
+        QTextStream out(&file);
+        out << plainText;
+        file.close();
+    }
+}

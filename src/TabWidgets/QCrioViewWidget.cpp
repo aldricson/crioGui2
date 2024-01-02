@@ -308,7 +308,9 @@ void QCrioViewWidget::onFillChannelsWithModules(QComboBox *modulesCb, QComboBox 
         std::vector<std::string> strLst;
         try {
             strLst = module->getChanNames();
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e)
+        {
             // Handle any exceptions thrown by getChanNames
             // e.g., log the error or display a message to the user
             channelCb->blockSignals(false);

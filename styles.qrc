@@ -10,5 +10,6 @@
         <file>styles/darkMappingRowWidget.scss</file>
         <file>styles/darkIniTreeWidget.scss</file>
         <file>styles/darkDonutGauge.scss</file>
+        <file>styles/darkCalendar.scss</file>
     </qresource>
 </RCC>

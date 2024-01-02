@@ -14,7 +14,7 @@ QLabel {
 QPushButton {
     border: 1px solid #449ef5;
     border-radius: 6px;
-	padding: 6px;
+    padding: 6px;
     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.1,
                                       stop: 0 #757575, stop: 1 #000000);
     min-width: 80px;
@@ -45,14 +45,8 @@ QMessageBox {
     color:#D3D3D3;
 }
 
-QComboBox {
-    border: 1px solid #D3D3D3;
-    border-radius: 6px;
-    padding: 3px;
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.1,
-                                      stop: 0 #757575, stop: 1 #000000);
-    color:#D3D3D3;
-}
+
+
 
 QPushButton:disabled 
 {
@@ -190,6 +184,7 @@ QProgressBar::chunk {
     background-color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 0,
                                       stop: 0 #202020, stop: 0.75 darkGreen);
 }
+
 
 
 

@@ -61,6 +61,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         styles.qrc
         crio-gui2.qrc
+        scripts.qrc
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ${THISPROJECT} APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -73,6 +74,8 @@ else()
             ${PROJECT_HEADERS}
             ${PROJECT_SOURCES}
             crio-gui2.qrc
+            styles.qrc
+            scripts.qrc
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
@@ -82,6 +85,8 @@ else()
             ${PROJECT_HEADERS}
             ${PROJECT_SOURCES}
             crio-gui2.qrc
+            styles.qrc
+            scripts.qrc
         )
     endif()
 endif()
