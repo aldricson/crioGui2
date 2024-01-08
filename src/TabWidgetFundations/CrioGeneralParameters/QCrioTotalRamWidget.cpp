@@ -3,9 +3,10 @@
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QDonutGauge.h"
 
-QCrioTotalRamWidget::QCrioTotalRamWidget(QWidget *parent)
-    : QCrioBaseCpuWidget("Crio Total Ram Usage", parent)
+QCrioTotalRamWidget::QCrioTotalRamWidget(const QString &md5Hash, const QString &executionPath, QWidget *parent)
+    : QCrioBaseCpuWidget(md5Hash, executionPath,"Crio Total Ram Usage", parent)
 {
+    m_executionPath = executionPath;
 }
 
 void QCrioTotalRamWidget::connectSSHSignals()

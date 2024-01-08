@@ -12,8 +12,11 @@ class QDataDrillHDDWidget : public QCrioBaseCpuWidget
     Q_OBJECT
 
 public:
-    explicit QDataDrillHDDWidget(QWidget *parent = nullptr);
+    explicit QDataDrillHDDWidget(const QString &md5Hash, const QString &executionPath, QWidget *parent = nullptr);
     virtual void connectSSHSignals() override;
+
+protected:
+    QString m_m_executionPath = "";
 
 private slots:
     virtual void onTimeOut() override;

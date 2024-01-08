@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QProcess>
 #include <QCoreApplication>
+#include <QMutex>
+#include <QMutexLocker>
 #include "stringUtils.h"
 
 class QSSHCommand : public QObject
@@ -19,7 +21,7 @@ class QSSHCommand : public QObject
     Q_PROPERTY(QString lastCommand READ getLastCommand WRITE setLastCommand NOTIFY lastCommandChanged )
 
 public:
-    QSSHCommand(QObject *parent = nullptr);
+    QSSHCommand(const QString &md5Hash, const QString &executionPath, QObject *parent = nullptr);
 
 
     void sendCommand(const QString &command, const QString &parameter = QString());
@@ -61,7 +63,7 @@ public:
     void getCrioTotalRamUsage       ()                           ;
     void getDataDrillRamUsage       ()                           ;
     void getCrioGlobalStats         ()                           ;
-
+    bool checkIntegrity             ()                           ;
     const QString &getLastCommand() const;
     void setLastCommand(const QString &newLastCommand);
 
@@ -99,20 +101,26 @@ signals:
     void lastCommandChanged(const QString &lastCommand);
 
 private:
+
+    static QMutex mutex; // Static mutex shared by all instances
     QString constructSSHCommand(const QString &command, const QString &parameter) const;
     void executeProcess(const QString &command);
 
-    QString  m_sshClient;
-    QString  m_hostName;
-    int      m_portNum = 22;
-    QString  m_userName;
-    QString  m_password;
-    QString  m_keyFile;
-    QProcess m_process;
-    QString  lastCommand;
+    QString  m_sshClient     = ""    ;
+    QString  m_hostName      = ""    ;
+    QString  m_hashMd5       = ""    ;
+    QString  m_executionPath = ""    ;
 
-    bool     m_withLibSSH2 = false;
+    QString  m_userName      = ""    ;
+    QString  m_password      = ""    ;
+    QString  m_keyFile       = ""    ;
+    int      m_portNum       = 22    ;
+    QProcess m_process               ;
+    QString  lastCommand     = ""    ;
+    bool     m_withLibSSH2   = false ;
 
+    QString encryptData(const QString& dataStr, const QString& keyStr);
+    QString decryptData(const QString& encryptedDataStr, const QString& keyStr);
 
 private slots:
     void processFinished(int exitCode, QProcess::ExitStatus exitStatus);

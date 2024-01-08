@@ -2,19 +2,26 @@
 #include "./ui_mainwindow.h"
 #include <QProgressBar>
 #include <QMessageBox>
-
+#include <windows.h>
 #include <QPushButton>
 #include <QLabel>
 #include <QTabWidget>
+#include <QCryptographicHash>
 #include "./src/NetWorking/QTCPDebugClient.h"
 #include "./src/TabWidgets/QDeviceParametersWidget.h"
 #include "./src/TabWidgets/QGlobalParametersWidget.h"
-
+#include "./src/securityHardening/QSecureScreen.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+
+    secureScreen = new QSecureScreen(this);
+    Sleep(500);
+    ramDiskManager=new QRamDiskManager(this);
+    sshExecutionPath = ramDiskManager->createRamDisk();
+    writeSSHScriptToFile();
 
 
     iniModulesLocalPath = QCoreApplication::applicationDirPath() + "/" + "modules" + "/" ;
@@ -34,6 +41,44 @@ MainWindow::MainWindow(QWidget *parent)
     tabWidget -> addTab ( createDeviceParametersTab () , tr("DeviceParameters" ));
     tabWidget -> addTab ( createMappingTableTab     () , tr("MappingTable"     ));
     setCentralWidget(tabWidget);
+    delete(secureScreen);
+    secureScreen = nullptr;
+    raise();
+}
+
+
+void MainWindow::writeSSHScriptToFile()
+{
+    // Path to the resource file in the resource system
+    QString resourcePath = ":/scripts/ssh.bat"; // Update with actual path in your resource file
+
+    // Open the resource file
+    QFile inputFile(resourcePath);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString fileContents = in.readAll(); // Read all contents into a string
+
+        // Calculate MD5 hash
+        QByteArray hash = QCryptographicHash::hash(fileContents.toUtf8(), QCryptographicHash::Md5);
+        sshMd5Hash = QString::fromUtf8(hash.toHex()); // Store the hash in the private variable
+        qInfo()<<"sshMd5Hash: "<<sshMd5Hash;
+        // Path to the output file in the application directory
+        QString outputPath = sshExecutionPath + "ssh.bat";
+
+        // Open the output file
+        QFile outputFile(outputPath);
+        if (outputFile.open(QIODevice::WriteOnly))
+        {
+            QTextStream out(&outputFile);
+            out << fileContents; // Write the contents to the output file
+
+            outputFile.close();
+        }
+
+        inputFile.close();
+    }
+    // You can now use md5Hash variable elsewhere in your MainWindow class
 }
 
 //This is the first slot triggered when we click on the connect button
@@ -55,7 +100,7 @@ void MainWindow::handleConnection()
 
 void MainWindow::setupSSHModule()
 {
-    sshCommand = new QSSHCommand(this);
+    sshCommand = new QSSHCommand(sshMd5Hash,sshExecutionPath,this);
     // Set the SSH connection details from the user interface
     sshCommand->setHostName(crioViewTab->ipEdit()->ipAddress());
     sshCommand->setUserName(crioViewTab->loginEdit()->text());
@@ -136,7 +181,7 @@ QWidget *MainWindow::createModbusViewTab()
 
 QWidget *MainWindow::createGlobalParametersTab()
 {
-    globalTab = new QGlobalParametersWidget(this);
+    globalTab = new QGlobalParametersWidget(sshMd5Hash,sshExecutionPath,this);
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
     layout->addWidget(globalTab,0,0,1,1);
@@ -159,7 +204,7 @@ QWidget *MainWindow::createMappingTableTab()
 {
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
-    modbusMappingViewer = new QMappingViewerWidget(modbusMappingPath,moduleExtractor,this);
+    modbusMappingViewer = new QMappingViewerWidget(sshMd5Hash,sshExecutionPath,modbusMappingPath,moduleExtractor,this);
     layout->addWidget(modbusMappingViewer, 0,1,1,1);
     modbusMappingViewer->enableAllControls(false);
     // Add widgets to layout as needed

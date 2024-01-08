@@ -23,7 +23,7 @@ class QGlobalParametersWidget : public QWidget
     Q_PROPERTY(QString password READ password WRITE setPassword NOTIFY passwordChanged)
     Q_PROPERTY(int sshPort READ sshPort WRITE setSshPort NOTIFY sshPortChanged)
 public:
-    explicit QGlobalParametersWidget(QWidget *parent = nullptr);
+    explicit QGlobalParametersWidget(const QString &md5Hash,const QString &executionPath, QWidget *parent = nullptr);
 
     const QString &hostName() const;
     void setHostName(const QString &newHostName);
@@ -54,10 +54,12 @@ private :
     QTimer                   *m_globalStatTimer    = nullptr;
     void setUpUi();
     void setUpLayout();
-    QString m_hostName = "";
-    QString m_userName = "";
-    QString m_password = "";
-    int     m_sshPort      ;
+    QString m_executionPath = "";
+    QString m_sshMd5Hash    = "";
+    QString m_hostName      = "";
+    QString m_userName      = "";
+    QString m_password      = "";
+    int     m_sshPort           ;
 
 private slots:
     void onGlobalStats (const QString &output, const QString &lastCommand);

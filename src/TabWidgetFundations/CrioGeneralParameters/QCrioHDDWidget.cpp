@@ -3,9 +3,10 @@
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QDonutGauge.h"
 
-QCrioHDDWidget::QCrioHDDWidget(QWidget *parent)
-    : QCrioBaseCpuWidget("Total CRIO HDD Usage", parent)
+QCrioHDDWidget::QCrioHDDWidget(const QString &md5Hash, const QString &executionPath,QWidget *parent)
+    : QCrioBaseCpuWidget(md5Hash,executionPath,"Total CRIO HDD Usage", parent)
 {
+    m_executionPath = executionPath;
 }
 
 void QCrioHDDWidget::connectSSHSignals()

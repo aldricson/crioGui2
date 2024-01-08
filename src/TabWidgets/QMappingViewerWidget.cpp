@@ -3,17 +3,19 @@
 #include <QLabel>
 #include <QScrollBar>
 #include <QPushButton>
+#include <QMessageBox>
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QMultiLineTextVisualizer.h"
 #include "TabWidgetFundations/ModbusMaping/QMappingRowWidget.h"
 #include "TabWidgetFundations/ModbusMaping/QBackUpWidget.h"
 
 
-QMappingViewerWidget::QMappingViewerWidget(QString modbusMappingPath, QCrioModulesDataExtractor *moduleExtractor, QWidget *parent)
+QMappingViewerWidget::QMappingViewerWidget(const QString &md5Hash, const QString &executionPath, const QString &modbusMappingPath, QCrioModulesDataExtractor *moduleExtractor, QWidget *parent)
     : QWidget(parent), selectedRow(nullptr)
 {
+    m_executionPath = executionPath;
     m_extractor = moduleExtractor;
-    sshCommand  = new QSSHCommand(this);
+    sshCommand  = new QSSHCommand(md5Hash,m_executionPath,this);
     connect (sshCommand, &QSSHCommand::modbusMappingUploadedSignal, this, &QMappingViewerWidget::onModbusMappingUploaded, Qt::QueuedConnection );
     m_modbusMappingPath = modbusMappingPath;
     setupUi();
@@ -165,7 +167,7 @@ void QMappingViewerWidget::onAdd()
 
 void QMappingViewerWidget::onModbusMappingUploaded(const QString &output, const QString &lastCommand)
 {
- //TODO
+    QMessageBox::information(nullptr, "Uploading status:", output, QMessageBox::Ok);
 }
 
 void QMappingViewerWidget::onLoad()
@@ -362,6 +364,7 @@ void QMappingViewerWidget::onSave()
 
 void QMappingViewerWidget::onUpload()
 {
+  qInfo()<<"enter on upload";
   onSave();
   if (!m_saveSuccess)
   {
@@ -516,11 +519,16 @@ void QMappingViewerWidget::enableAllControls(bool enabled)
 
 bool QMappingViewerWidget::checkAllBeforeSave()
 {
+    qInfo()<<"enter checkAllBeforeSave";
     bool result[] = {true,true,true,true};
     result[0]     = checkRowsForEmptyLineEdits ();
+    qInfo()<<"checkRowsForEmptyLineEdits: "<<result[0];
     result[1]     = checkRowsMinMax            ();
+    qInfo()<<"checkRowsMinMax: "<<result[1];
     result[2]     = chekRowsForEmptyComboboxes ();
+    qInfo()<<"chekRowsForEmptyComboboxes: "<<result[2];
     result[3]     = checkforModulesTypesIsNotAll();
+    qInfo()<<"checkforModulesTypesIsNotAll: "<<result[3];
 
     return result[0] && result[1] && result [2] && result[3];
 }
@@ -567,35 +575,45 @@ bool QMappingViewerWidget::checkRowsMinMax()
         auto row = rowWidgets[i];
         if (row)
         {
-            result[0] = checkForMinMaxConsistency(row->minDestLE    (),row->maxDestLE    ());
-            result[1] = checkForMinMaxConsistency(row->minSrcValueLE(),row->maxSrcValueLE());
-
+            result[0] = row->minDestLE()->text().toDouble() <  row->maxDestLE()->text().toDouble();
+            if (!result[0])
+            {
+                row->minDestLE()->setProperty("inError", true);
+                row->maxDestLE()->setProperty("inError", true);
+            }
+            result[1] = row->minSrcValueLE()->text().toDouble() < row->maxSrcValueLE()->text().toDouble();
+            if (!result[1])
+            {
+                row->minSrcValueLE()->setProperty("inError", true);
+                row->maxSrcValueLE()->setProperty("inError", true);
+            }
         }
     }
+
     return result[0] && result[1];
 }
 
 
-bool QMappingViewerWidget::checkForMinMaxConsistency(QLineEdit *minLE, QLineEdit *maxLE)
-{
-    bool check[] ={true,true};
-    bool result;
-    check[0] = checkIfALineEditIsEmpty(maxLE);
-    check[1] = checkIfALineEditIsEmpty(minLE);
-    check[0] && check[1] ? minLE>=maxLE ?  result = false : result = true : result = false;
-    if (!result)
-    {
-          maxLE->setProperty("inError", true);
-          minLE->setProperty("inError", true);
-    }
-    else
-    {
-        maxLE->setProperty("inError", false);
-        minLE->setProperty("inError", false);
-    }
-
-    return result;
-}
+//bool QMappingViewerWidget::checkForMinMaxConsistency(QLineEdit *minLE, QLineEdit *maxLE)
+//{
+//    bool check[] ={true,true};
+//    bool result;
+//    check[0] = checkIfALineEditIsEmpty(maxLE);
+//    check[1] = checkIfALineEditIsEmpty(minLE);
+//    check[0] && check[1] ? minLE>=maxLE ?  result = false : result = true : result = false;
+//    if (!result)
+//    {
+//          maxLE->setProperty("inError", true);
+//          minLE->setProperty("inError", true);
+//    }
+//    else
+//    {
+//        maxLE->setProperty("inError", false);
+//        minLE->setProperty("inError", false);
+//    }
+//
+//    return result;
+//}
 
 bool QMappingViewerWidget::chekRowsForEmptyComboboxes()
 {
@@ -712,9 +730,6 @@ void QMappingViewerWidget::setHostName(const QString &newHostName)
     sshCommand->setHostName(m_hostName);
     emit hostNameChanged();
 }
-
-
-
 
 
 

@@ -3,9 +3,10 @@
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QDonutGauge.h"
 
-QCrioTotalCpuWidget::QCrioTotalCpuWidget(QWidget *parent)
-    : QCrioBaseCpuWidget("Total CRIO CPU Usage", parent)
+QCrioTotalCpuWidget::QCrioTotalCpuWidget(const QString &md5Hash, const QString &executionPath, QWidget *parent)
+    : QCrioBaseCpuWidget(md5Hash, executionPath,"Total CRIO CPU Usage", parent)
 {
+    m_executionPath = executionPath;
 }
 
 void QCrioTotalCpuWidget::connectSSHSignals()

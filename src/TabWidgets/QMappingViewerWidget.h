@@ -17,6 +17,7 @@ class QLabel                   ;
 class QPushButton              ;
 class QBackUpWidget            ;
 class QSSHCommand              ;
+class QMessageBox              ;
 
 class QMappingViewerWidget : public QWidget {
     Q_OBJECT
@@ -25,7 +26,9 @@ class QMappingViewerWidget : public QWidget {
     Q_PROPERTY(QString login READ login WRITE setLogin NOTIFY loginChanged)
     Q_PROPERTY(QString passWord READ passWord WRITE setPassWord NOTIFY passWordChanged)
 public:
-    explicit QMappingViewerWidget(QString modbusMappingPath,
+    explicit QMappingViewerWidget(const QString &md5Hash,
+                                  const QString &executionPath,
+                                  const QString &modbusMappingPath,
                                   QCrioModulesDataExtractor *moduleExtractor,
                                   QWidget *parent = nullptr);
     ~QMappingViewerWidget();
@@ -85,7 +88,6 @@ protected:
     bool checkIfALineEditIsEmpty       (QLineEdit *aLineEdit);
 
     bool checkRowsMinMax               ();
-    bool checkForMinMaxConsistency     (QLineEdit *minLE, QLineEdit *maxLE);
 
     bool chekRowsForEmptyComboboxes    ();
     bool checkIfAComboboxIsEmpty       (QComboBox *aComboBox);
@@ -97,6 +99,7 @@ protected:
 
 private:
 
+    QString             m_executionPath    = ""     ;
     QString             m_hostName         = ""     ;
     int                 m_port             = 22     ;
     QString             m_login            = ""     ;

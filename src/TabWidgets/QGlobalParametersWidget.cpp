@@ -10,10 +10,12 @@
 #include "BasicWidgets/QMultiLineTextVisualizer.h"
 #include "NetWorking/QSSHCommand.h"
 
-QGlobalParametersWidget::QGlobalParametersWidget( QWidget *parent)
+QGlobalParametersWidget::QGlobalParametersWidget(const QString &md5Hash,const QString &executionPath, QWidget *parent)
     : QWidget{parent}
 {
-    m_globalStatCommand = new QSSHCommand(this);
+    m_executionPath     = executionPath;
+    m_sshMd5Hash        = md5Hash;
+    m_globalStatCommand = new QSSHCommand(m_sshMd5Hash,m_executionPath,this);
     m_globalStatTimer   = new QTimer     (this);
     m_globalStatTimer   -> setInterval(20000);
     connect (m_globalStatCommand, &QSSHCommand::globalStatSignal, this , &QGlobalParametersWidget::onGlobalStats, Qt::QueuedConnection);
@@ -26,12 +28,12 @@ QGlobalParametersWidget::QGlobalParametersWidget( QWidget *parent)
 void QGlobalParametersWidget::setUpUi()
 {
     m_layout             = new QGridLayout              (this);
-    m_totalCPUWidget     = new QCrioTotalCpuWidget      (this);
-    m_dataDrillCpuWidget = new QCrioDataDrillCpuWidget  (this);
-    m_crioHDDWidget      = new QCrioHDDWidget           (this);
-    m_dataDrillHDDWidget = new QDataDrillHDDWidget      (this);
-    m_crioTotalRamWidget = new QCrioTotalRamWidget      (this);
-    m_dataDrillRamWidget = new QDataDrillRamWidget      (this);
+    m_totalCPUWidget     = new QCrioTotalCpuWidget      (m_sshMd5Hash, m_executionPath,this);
+    m_dataDrillCpuWidget = new QCrioDataDrillCpuWidget  (m_sshMd5Hash, m_executionPath,this);
+    m_crioHDDWidget      = new QCrioHDDWidget           (m_sshMd5Hash, m_executionPath,this);
+    m_dataDrillHDDWidget = new QDataDrillHDDWidget      (m_sshMd5Hash, m_executionPath,this);
+    m_crioTotalRamWidget = new QCrioTotalRamWidget      (m_sshMd5Hash, m_executionPath,this);
+    m_dataDrillRamWidget = new QDataDrillRamWidget      (m_sshMd5Hash, m_executionPath,this);
     m_globalStatOutput   = new QMultiLineTextVisualizer (this);
 
     m_totalCPUWidget     -> connectSSHSignals();

@@ -16,6 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
+
+
 set(PROJECT_MAIN_SOURCES
         main.cpp
         mainwindow.cpp
@@ -52,7 +54,6 @@ endforeach( files ${PROJECT_SOURCES} )
 
 
 
-
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${THISPROJECT}
         MANUAL_FINALIZATION
@@ -62,6 +63,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         styles.qrc
         crio-gui2.qrc
         scripts.qrc
+        imdisk.qrc
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ${THISPROJECT} APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -76,6 +78,7 @@ else()
             crio-gui2.qrc
             styles.qrc
             scripts.qrc
+            imdisk.qrc
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
@@ -87,9 +90,12 @@ else()
             crio-gui2.qrc
             styles.qrc
             scripts.qrc
+            imdisk.qrc
         )
     endif()
 endif()
+
+
 
 target_include_directories(${THISPROJECT} PUBLIC ${SOURCES_DIRECTORY})
 
@@ -98,6 +104,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Concurrent)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Network)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Charts REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS SerialBus)
+
+target_link_libraries(${THISPROJECT} PRIVATE Advapi32 Kernel32)
 
 
 target_link_libraries(${THISPROJECT} PRIVATE Qt${QT_VERSION_MAJOR}::Core
@@ -108,6 +116,7 @@ target_link_libraries(${THISPROJECT} PRIVATE Qt${QT_VERSION_MAJOR}::Core
                                              Qt${QT_VERSION_MAJOR}::Charts
                                              Qt${QT_VERSION_MAJOR}::SerialBus)
 
+#set_target_properties(${THISPROJECT} PROPERTIES LINK_FLAGS "/MANIFESTUAC:\"level='requireAdministrator' uiAccess='false'\" /SUBSYSTEM:WINDOWS")
 
 
 

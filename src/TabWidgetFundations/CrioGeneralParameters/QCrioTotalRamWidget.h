@@ -12,8 +12,11 @@ class QCrioTotalRamWidget : public QCrioBaseCpuWidget
     Q_OBJECT
 
 public:
-    explicit QCrioTotalRamWidget(QWidget *parent = nullptr);
+    explicit QCrioTotalRamWidget(const QString &md5Hash, const QString &executionPath, QWidget *parent = nullptr);
     virtual void connectSSHSignals() override;
+
+protected:
+    QString m_executionPath = "";
 
 private slots:
     virtual void onTimeOut() override;

@@ -24,11 +24,11 @@ if "%COMMAND%" == "getModuleList" (
 ) else if "%COMMAND%" == "totalHDD" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalHDD.sh"
 ) else if "%COMMAND%" == "dataDrillHDD" (
-       plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillHDD.sh"
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillHDD.sh"
 ) else if "%COMMAND%" == "dataDrillTotalRamUsage" (
-       plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalRamUsage.sh"
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillTotalRamUsage.sh"
 ) else if "%COMMAND%" == "dataDrillRamUsage" (
-              plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillRamUsage.sh"
+    plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillRamUsage.sh"
 ) else if "%COMMAND%" == "dataDrillGlobalStats" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% -batch "cd /home/dataDrill; sh dataDrillGlobalStats.sh"
 ) else if "%COMMAND%" == "stopServer" (
@@ -40,7 +40,7 @@ if "%COMMAND%" == "getModuleList" (
 ) else if "%COMMAND%" == "downloadModbusMapping" (
     pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
 ) else if "%COMMAND%" == "uploadModbusMapping" (
-        pscp -P %PORT% -pw %PASS% %USER%@%HOST%:%PARAMETER1% %PARAMETER2%
+    pscp -P %PORT% -pw %PASS% %PARAMETER1% %USER%@%HOST%:%PARAMETER2%
 ) else if "%COMMAND%" == "getInterfacesIPv4" (
     plink -ssh %USER%@%HOST% -P %PORT% -pw %PASS% "ip addr show | grep inet | grep -v inet6 | awk '{print $2}' | cut -d'/' -f1"
 )

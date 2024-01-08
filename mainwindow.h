@@ -22,6 +22,7 @@
 #include "./src/TabWidgets/QModbusSetupViewer.h"
 #include "./src/TabWidgets/QCrioViewWidget.h"
 #include "./src/TabWidgets/QMappingViewerWidget.h"
+#include "./src/securityHardening/QRamDiskManager.h"
 
 class QProgressBar            ;
 class QMessageBox             ;
@@ -31,6 +32,7 @@ class QTabWidget              ;
 class QTCPDebugClient         ;
 class QDeviceParametersWidget ;
 class QGlobalParametersWidget ;
+class QSecureScreen           ;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -49,6 +51,8 @@ private:
 
     //visual placing objects
     Ui::MainWindow            *ui                            ;
+    QRamDiskManager           *ramDiskManager       = nullptr;
+    QSecureScreen             *secureScreen         = nullptr;
     QVBoxLayout               *mainLayout           = nullptr;
     //this class is in charge to intercept crio udp debug datagrams
     QTCPDebugClient           *m_crioDebugger       = nullptr;
@@ -82,12 +86,12 @@ private:
     QStringList      currentModulesPathList ;
     QStringList      voltageModulesPathList ;
     int              currentModuleIndex     ;
-
+    QString          sshMd5Hash             ;
 
 
    // QIniTreeWidget  *iniTreeWidget;
 
-
+    void writeSSHScriptToFile();
 
     QWidget *createCrioViewTab         ();
     QWidget *createModbusViewTab       ();
@@ -100,12 +104,14 @@ private:
     //default TCP/IP command port
     const quint16 commandPort = 8222;
 
+    QString   sshExecutionPath    = ""                     ;
     QString   iniModulesLocalPath = ""                     ;
     QString   iniModbusSetupPath  = ""                     ;
     QString   modbusMappingPath   = ""                     ;
     void      handleConnection               ()            ;
     void      downloadModulesDefinitions     (int index)   ;
     QString   retriveStringFromListViewIndex (int rowIndex);
+
 
 private slots:
     //this slot is triggered when sshCommand fails

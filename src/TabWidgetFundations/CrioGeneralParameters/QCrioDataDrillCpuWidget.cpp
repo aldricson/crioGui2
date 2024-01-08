@@ -3,9 +3,10 @@
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QDonutGauge.h"
 
-QCrioDataDrillCpuWidget::QCrioDataDrillCpuWidget(QWidget *parent)
-    : QCrioBaseCpuWidget("CRIO DataDrill CPU Usage", parent)
+QCrioDataDrillCpuWidget::QCrioDataDrillCpuWidget(const QString &md5Hash,const QString &executionPath,QWidget *parent)
+    : QCrioBaseCpuWidget(md5Hash, executionPath,"CRIO DataDrill CPU Usage", parent)
 {
+    m_executionPath=executionPath;
 }
 
 void QCrioDataDrillCpuWidget::connectSSHSignals()

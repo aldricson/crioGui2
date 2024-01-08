@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>scripts/ssh.bat</file>
+        <file>scripts/ramDisk.bat</file>
     </qresource>
 </RCC>

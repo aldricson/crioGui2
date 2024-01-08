@@ -5,14 +5,15 @@
 #include "BasicWidgets/QDonutGauge.h"
 #include "NetWorking/QSSHCommand.h"
 
-QCrioBaseCpuWidget::QCrioBaseCpuWidget(const QString &title,QWidget *parent)
+QCrioBaseCpuWidget::QCrioBaseCpuWidget(const QString &md5Hash, const QString &execution_path , const QString &title, QWidget *parent)
 {
+    m_executionPath = execution_path;
     m_timer = new QTimer(this);
     m_timer->setInterval(6000);
     connect (m_timer, &QTimer::timeout, this, &QCrioBaseCpuWidget::onTimeOut, Qt::QueuedConnection);
     m_title = title;
     setUpUi();
-    m_sshCommand = new QSSHCommand(this);
+    m_sshCommand = new QSSHCommand(md5Hash,m_executionPath,this);
 }
 
 const QString &QCrioBaseCpuWidget::hostName() const

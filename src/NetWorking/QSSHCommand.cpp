@@ -29,8 +29,12 @@
 
 
 #include "QSSHCommand.h"
+#include <QFile>
+#include <QCryptographicHash>
+#include <QMutex>
 
 
+QMutex QSSHCommand::mutex;
 /**
  * @brief Constructor for the QSSHCommand class.
  *
@@ -45,15 +49,48 @@
  *   If an error occurs (other than an unknown error), the 'errorOccurredSignal' is emitted with details of the error and the last executed command.
  * - The lambda function captures 'this' pointer to access class members and Q_EMIT signals from within the lambda body.
  */
-QSSHCommand::QSSHCommand(QObject *parent) : QObject(parent), m_portNum(22)
+QSSHCommand::QSSHCommand(const QString &md5Hash,const QString &executionPath, QObject *parent) : QObject(parent), m_portNum(22)
 {
+    m_executionPath=executionPath;
+    m_hashMd5 = md5Hash;
     connect(&m_process, &QProcess::finished, this, &QSSHCommand::processFinished);
     connect(&m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
-        if (error != QProcess::ProcessError::UnknownError) {
+        if (error != QProcess::ProcessError::UnknownError)
+        {
             Q_EMIT errorOccurredSignal(m_process.errorString(),lastCommand);
         }
     });
 }
+
+QString QSSHCommand::encryptData(const QString& dataStr, const QString& keyStr)
+{
+    QByteArray data = dataStr.toUtf8();
+    QByteArray key = keyStr.toUtf8();
+    QByteArray result;
+    result.reserve(data.size());
+
+    for (int i = 0; i < data.size(); ++i) {
+        result.append(data[i] ^ key[i % key.size()]);
+    }
+
+    // Convertir le résultat en base64 pour un stockage / transmission sûrs
+    return result.toBase64();
+}
+
+QString QSSHCommand::decryptData(const QString& encryptedDataStr, const QString& keyStr)
+{
+    QByteArray encryptedData = QByteArray::fromBase64(encryptedDataStr.toUtf8());
+    QByteArray key = keyStr.toUtf8();
+    QByteArray result;
+    result.reserve(encryptedData.size());
+
+    for (int i = 0; i < encryptedData.size(); ++i) {
+        result.append(encryptedData[i] ^ key[i % key.size()]);
+    }
+
+    return QString::fromUtf8(result);
+}
+
 
 
 /**
@@ -81,6 +118,37 @@ void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (output.isEmpty()) {
         output = m_process.readAllStandardError();
     }
+
+
+    QFile inputFile(m_executionPath+"ssh.bat");
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString fileContents = in.readAll(); // Read all contents into a string
+
+        if (fileContents.startsWith("@echo off"))
+        {
+            QString encrypted = encryptData(fileContents,m_hashMd5);
+            qInfo()<<"encrypted file:\n"<<encrypted;
+            fileContents = encrypted;
+
+            // Path to the output file in the application directory
+            QString outputPath = m_executionPath + "ssh.bat";
+
+            // Open the output file
+            QFile outputFile(outputPath);
+            if (outputFile.open(QIODevice::WriteOnly))
+            {
+                QTextStream out(&outputFile);
+                out << fileContents; // Write the contents to the output file
+
+            }
+            outputFile.close();
+        }
+    }
+    inputFile.close();
+
+
     // Check which command was executed last and Q_EMIT the corresponding signal.
     // Each if/else if block handles a different command.
     // Handling 'dir' command - used for listing directory contents.
@@ -179,9 +247,17 @@ void QSSHCommand::processFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
 void QSSHCommand::sendCommand(const QString &command, const QString &parameter)
 {
-    lastCommand = command; // Store the command
-    QString commandLine = constructSSHCommand(command, parameter);
-    executeProcess(commandLine);
+    QMutexLocker locker(&mutex); // Lock the mutex for the scope of this function
+    if (checkIntegrity())
+    {
+       lastCommand = command; // Store the command
+       QString commandLine = constructSSHCommand(command, parameter);
+       if (lastCommand=="downloadModbusMapping" || lastCommand == "uploadModbusMapping" )
+       {
+           qInfo()<<commandLine;
+       }
+       executeProcess(commandLine);
+    }
 }
 
 
@@ -202,7 +278,7 @@ void QSSHCommand::sendCommand(const QString &command, const QString &parameter)
 QString QSSHCommand::constructSSHCommand(const QString &command, const QString &parameter) const
 {
     // Construct the command to call the batch script with the necessary arguments
-    QString scriptPath = QCoreApplication::applicationDirPath() + "/ssh.bat";
+    QString scriptPath = m_executionPath + "ssh.bat";
     QString commandLine = QString("%1 %2 %3 %4 %5 %6")
         .arg(scriptPath,
              m_hostName,
@@ -311,7 +387,7 @@ void QSSHCommand::uploadMappingSetup(QString modbusMappingPath)
 {
     if (!m_withLibSSH2)
     {
-        QString params = modbusMappingPath+"mapping.csv /home/dataDrill/mapping.csv";
+        QString params = modbusMappingPath+"mapping.csv"+" /home/dataDrill/mapping.csv";
         sendCommand("uploadModbusMapping", params);
     }
     else
@@ -452,6 +528,82 @@ void QSSHCommand::getCrioGlobalStats()
     else
     {
         //TODO
+    }
+}
+
+bool QSSHCommand::checkIntegrity()
+{
+    QFile inputFile(m_executionPath+"ssh.bat");
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QTextStream in(&inputFile);
+        QString fileContents = in.readAll(); // Read all contents into a string
+
+        if (!fileContents.startsWith("@echo off"))
+        {
+            QString decrypted = decryptData(fileContents,m_hashMd5);
+            qInfo()<<"decrypted file:\n"<<decrypted;
+            fileContents = decrypted;
+
+            // Open the output file
+            QFile outputFile2(m_executionPath+"ssh.bat");
+            if (outputFile2.open(QIODevice::WriteOnly))
+            {
+                QTextStream out2(&outputFile2);
+                out2 << fileContents; // Write the contents to the output file
+
+            }
+            outputFile2.close();
+        }
+
+        // Calculate MD5 hash
+        QByteArray hash = QCryptographicHash::hash(fileContents.toUtf8(), QCryptographicHash::Md5);
+        QString currentMd5 = QString::fromUtf8(hash.toHex());
+        if (currentMd5!=m_hashMd5)
+        {
+            //somebody tries to hack the crio ssh.bat
+            //Should we let it like this ? No... let's silently replace it
+
+            // Path to the resource file in the resource system
+             QString resourcePath = ":/scripts/ssh.bat"; // Update with actual path in your resource file
+
+             // Open the resource file
+             QFile inputFile2(resourcePath);
+             if (inputFile2.open(QIODevice::ReadOnly))
+             {
+                 QTextStream in(&inputFile2);
+                 QString fileContents2 = in.readAll(); // Read all contents into a string
+
+                 // Path to the output file in the application directory
+                 QString outputPath = m_executionPath + "ssh.bat";
+
+                 // Open the output file
+                 QFile outputFile2(outputPath);
+                 if (outputFile2.open(QIODevice::WriteOnly))
+                 {
+                     QTextStream out2(&outputFile2);
+                     out2 << fileContents2; // Write the contents to the output file
+
+                 }
+                 outputFile2.close();
+
+             }
+             inputFile2.close();
+            return false;
+        }
+        else
+        {
+              inputFile.close();
+              return true;
+        }
+
+
+
+    }
+    else
+    {
+        inputFile.close();
+        return false;
     }
 }
 

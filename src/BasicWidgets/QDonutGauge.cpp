@@ -1,9 +1,5 @@
 #include "QDonutGauge.h"
-#include <QPainter>
-#include <QConicalGradient>
-#include <QStyleOption>
-#include <QLabel>
-#include <QFile>
+
 
 QDonutGauge::QDonutGauge(QWidget *parent) : QWidget(parent),
                                             m_min(0),

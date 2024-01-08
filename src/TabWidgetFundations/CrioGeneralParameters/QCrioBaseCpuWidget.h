@@ -20,7 +20,7 @@ class QCrioBaseCpuWidget : public QWidget
     Q_PROPERTY(QString passWord READ passWord WRITE setPassWord NOTIFY passWordChanged)
 
 public:
-    explicit QCrioBaseCpuWidget(const QString &title, QWidget *parent = nullptr);
+    explicit QCrioBaseCpuWidget(const QString &md5Hash, const QString &execution_path, const QString &title, QWidget *parent = nullptr);
 
     const QString &hostName() const;
     void setHostName(const QString &newHostName);
@@ -45,7 +45,8 @@ protected :
     QSSHCommand         *m_sshCommand      = nullptr;
     QTimer              *m_timer           = nullptr;
     QGroupBox           *m_container       = nullptr;
-    QDonutGauge         *m_donutGauge   = nullptr;
+    QDonutGauge         *m_donutGauge      = nullptr;
+    QString             m_executionPath    = ""     ;
     QString             m_hostName         = ""     ;
     int                 m_port             = 22     ;
     QString             m_login            = ""     ;

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>ImDiskTk20231231/files.cab</file>
+        <file>ImDiskTk20231231/install.bat</file>
+    </qresource>
+</RCC>

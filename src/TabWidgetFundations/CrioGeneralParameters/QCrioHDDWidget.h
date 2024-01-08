@@ -12,8 +12,11 @@ class QCrioHDDWidget : public QCrioBaseCpuWidget
     Q_OBJECT
 
 public:
-    explicit QCrioHDDWidget(QWidget *parent = nullptr);
+    explicit QCrioHDDWidget(const QString &md5Hash, const QString &executionPath, QWidget *parent = nullptr);
     virtual void connectSSHSignals() override;
+
+protected:
+    QString m_executionPath = "";
 
 private slots:
     virtual void onTimeOut() override;

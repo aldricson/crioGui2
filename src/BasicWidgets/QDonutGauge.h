@@ -2,10 +2,11 @@
 #define QDONUTGAUGE_H
 
 #include <QWidget>
-
-
-class QFile;
-class QLabel;
+#include <QPainter>
+#include <QConicalGradient>
+#include <QStyleOption>
+#include <QLabel>
+#include <QFile>
 
 class QDonutGauge : public QWidget
 {

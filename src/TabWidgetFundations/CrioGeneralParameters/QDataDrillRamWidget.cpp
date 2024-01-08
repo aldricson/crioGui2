@@ -3,9 +3,10 @@
 #include "NetWorking/QSSHCommand.h"
 #include "BasicWidgets/QDonutGauge.h"
 
-QDataDrillRamWidget::QDataDrillRamWidget(QWidget *parent)
-    : QCrioBaseCpuWidget("dataDrill Ram Usage", parent)
+QDataDrillRamWidget::QDataDrillRamWidget(const QString &md5Hash,const QString &executionPath, QWidget *parent)
+    : QCrioBaseCpuWidget(md5Hash, executionPath,"dataDrill Ram Usage", parent)
 {
+    m_executionPath = executionPath;
 }
 
 void QDataDrillRamWidget::connectSSHSignals()
