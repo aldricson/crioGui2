@@ -78,14 +78,11 @@ private slots:
 
 signals:
     void fileNameChanged();
-
     void hostChanged();
-
     void portChanged();
-
     void debugOutputChanged();
-
     void analogsViewerChanged();
+    void blockDirectReadingSignal (const bool &blocked);
 
 private:
     QSettings *settings                    = nullptr;

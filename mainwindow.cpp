@@ -172,7 +172,7 @@ QWidget *MainWindow::createModbusViewTab()
 {
     modbusSetupViewer = new QModbusSetupViewer(this);
     modbusSetupViewer->setFileName(iniModbusSetupPath+"modbus.ini");
-
+    connect (modbusSetupViewer,&QModbusSetupViewer::blockDirectReadingSignal, this, &MainWindow::onBlockDirectRead, Qt::QueuedConnection);
     QWidget *tab = new QWidget();
     QGridLayout *layout = new QGridLayout(tab);
     layout->addWidget(modbusSetupViewer,0,0,1,1);
@@ -513,6 +513,13 @@ void MainWindow::onCrioDebugMessage(const QString &message)
     {
         modbusSetupViewer->debugOutput()->addLastOutput(message);
     }
+}
+
+void MainWindow::onBlockDirectRead(const bool &blocked)
+{
+   qInfo()<<"block reading"<<blocked;
+   crioViewTab->currentTestWidget()->setEnabled(blocked);
+   crioViewTab->voltageTestWidget()->setEnabled(blocked);
 }
 
 void MainWindow::onServerChangeState(bool isOn)

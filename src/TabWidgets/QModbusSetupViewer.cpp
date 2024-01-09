@@ -307,7 +307,7 @@ void QModbusSetupViewer::onAcquisitionStarted(const QString &response)
     //output is Enter on acquisition started, response: "ACK"
     if (response.contains("ACK"))
     {
-
+        Q_EMIT blockDirectReadingSignal(true);
         m_nbAnalogics = nbAnalogsInLineEdit->text().toInt();
         compatibilityLayerSwitch->getState() ? m_exlogOffset = 1 : m_exlogOffset = 0;
         m_comControl->addLastOutput("Modbus server acquisition on");
@@ -317,6 +317,7 @@ void QModbusSetupViewer::onAcquisitionStarted(const QString &response)
     }
     else if (response.contains("NACK"))
     {
+        Q_EMIT blockDirectReadingSignal(false);
         m_modbusReading = false;
         m_modbusTimer->stop();
         m_comControl->addLastError("Somthing gone wrong when trying to start acquisition:\n"+response);
@@ -337,6 +338,7 @@ void QModbusSetupViewer::onAcquisitionStoped(const QString &response)
         m_modbusTimer->stop();
         m_comControl->addLastError("Somthing gone wrong when trying to stop acquisition:\n"+response);
     }
+    Q_EMIT blockDirectReadingSignal(false);
     simulateAcquisitionSwitch->setEnabled(true);
     simulateAcquisitionSwitch->update();
 }

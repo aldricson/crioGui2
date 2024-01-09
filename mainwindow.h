@@ -160,6 +160,8 @@ private slots:
     //triggered by the udp listener when the crio send a dbug udp packet
     void onCrioDebugMessage (const QString &message);
 
+    void onBlockDirectRead(const bool &blocked);
+
 
 
     void  onModuleListUpdated(const QModelIndex &index);

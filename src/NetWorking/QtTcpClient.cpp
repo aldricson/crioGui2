@@ -92,7 +92,7 @@ bool QtTcpClient::checkConnect(const QString &host, quint16 port)
 void QtTcpClient::sendReadCurrentRequest(const QString &moduleAlias, unsigned int channelIndex)
 {
     if (checkConnect(m_host, m_port)) {
-        QString request = QString("readCurrent;%1;%2;").arg(moduleAlias).arg(channelIndex);
+        QString request = QString("readCurrent;%1;%2;\n").arg(moduleAlias).arg(channelIndex);
         m_lastRequest = "readCurrent";
         socket->write(request.toUtf8());
         socket->waitForBytesWritten(); // Returns true if the request is sent successfully.
@@ -121,7 +121,7 @@ void QtTcpClient::sendReadVoltageRequest(const QString &moduleAlias, unsigned in
 {
     if (checkConnect(m_host, m_port))
     {
-        QString request = QString("readVoltage;%1;%2;").arg(moduleAlias).arg(channelIndex);
+        QString request = QString("readVoltage;%1;%2;\n").arg(moduleAlias).arg(channelIndex);
         m_lastRequest = "readVoltage";
         socket->write(request.toUtf8());
         socket->waitForBytesWritten();
@@ -147,8 +147,9 @@ void QtTcpClient::sendStartModbusSimulation()
 {
     if (checkConnect(m_host, m_port))
     {
-        QString request = "startModbusSimulation";
-        m_lastRequest = request;
+        m_lastRequest = "startModbusSimulation";
+        QString request = m_lastRequest+"\n";
+
         socket->write(request.toUtf8());
         socket->waitForBytesWritten();
     }
@@ -162,8 +163,8 @@ void QtTcpClient::sendStopSimulation()
 {
     if (checkConnect(m_host, m_port))
     {
-        QString request = "stopModbusSimulation";
-        m_lastRequest = request;
+        m_lastRequest = "stopModbusSimulation";
+        QString request = m_lastRequest+"\n";
         socket->write(request.toUtf8());
         socket->waitForBytesWritten();
     }
@@ -177,8 +178,9 @@ void QtTcpClient::sendStartModbusAcquisition()
 {
     if (checkConnect(m_host, m_port))
     {
-        QString request = "startModbusAcquisition";
-        m_lastRequest = request;
+        m_lastRequest = "startModbusAcquisition";
+        QString request = m_lastRequest+"\n";
+
         socket->write(request.toUtf8());
         socket->waitForBytesWritten();
     }
@@ -192,8 +194,9 @@ void QtTcpClient::sendStopModbusAcquisition()
 {
     if (checkConnect(m_host, m_port))
     {
-        QString request = "stopModbusAcquisition";
-        m_lastRequest = request;
+        m_lastRequest = "stopModbusAcquisition";
+        QString request = m_lastRequest+"\n";
+
         socket->write(request.toUtf8());
         socket->waitForBytesWritten();
     }
